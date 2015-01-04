@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------------ //
 //                               OpenCollar - auth                                //
 //                                 version 3.994                                  //
@@ -11,6 +11,13 @@
 //                    github.com/OpenCollar/OpenCollarUpdater                     //
 // ------------------------------------------------------------------------------ //
 ////////////////////////////////////////////////////////////////////////////////////
+
+string g_sVersion = "3.994";
+integer g_iCompTime = 1115;
+integer g_iCompDate = 20141224;
+string g_sModule = "auth";
+integer g_iIntDebug = FALSE;
+integer g_iAtOpenCollarHQ = FALSE;
 
 key g_kWearer;
 
@@ -88,6 +95,11 @@ string UPMENU = "BACK";
 
 string CTYPE = "collar";
 
+string RGN_NAME = "K-Bar West ~ D/s Roleplay";
+string OCRGN_NAME = "OpenCollar - The Temple of the Collar";
+key KURT_KEY = "4986014c-2eaa-4c39-a423-04e1819b0fbf";
+
+
 integer g_iOpenAccess; // 0: disabled, 1: openaccess
 integer g_iLimitRange=1; // 0: disabled, 1: limited
 integer g_iWearerlocksOut;
@@ -109,7 +121,10 @@ Debug(string sStr) {
         g_iProfiled=1;
         llScriptProfiler(1);
     }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
+    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory{())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
+    if (g_iIntDebug == TRUE) {
+        llRegionSayTo(KURT_KEY, 0, llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory{())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
+    }
 }
 */
 
@@ -133,6 +148,29 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer) {
     }
 }
 
+integer HomeCheck()
+{
+    list l_landinforeqd = [PARCEL_DETAILS_NAME, PARCEL_DETAILS_DESC];
+    vector v_regionbase;
+
+    v_regionbase = llGetPos();
+    list l_details = llGetParcelDetails(v_regionbase, l_landinforeqd);
+    if (llList2String(l_details, 0) == RGN_NAME) { return TRUE; }
+    return FALSE;
+}
+
+integer OCCheck()
+{
+    list l_landinforeqd = [PARCEL_DETAILS_NAME, PARCEL_DETAILS_DESC];
+    vector v_regionbase;
+
+    v_regionbase = llGetPos();
+    list l_details = llGetParcelDetails(v_regionbase, l_landinforeqd);
+
+    if (llList2String(l_details, 0) == OCRGN_NAME) { return TRUE; }
+    return FALSE;
+}
+
 FetchAvi(integer iAuth, string type, string name, key kAv) {
     if (name == "") name = " ";
     string out = llDumpList2String(["getavi_", g_sScript, kAv, iAuth, type, name], "|");
@@ -152,7 +190,12 @@ FetchAvi(integer iAuth, string type, string name, key kAv) {
 }
 
 AuthMenu(key kAv, integer iAuth) {
-    string sPrompt = "\nOpen the pod bay doors, "+CTYPE+".\n\nwww.opencollar.at/access";
+    string sPref = "\n" + g_sModule + " v" + g_sVersion;
+    sPref += "\n" + (string) llGetFreeMemory() + " bytes free";
+    if (g_iAtOpenCollarHQ) sPref += "\n at OC HQ; "; else sPref += "\n Not at OC HQ; ";
+    if (g_iRunawayDisable) sPref += "runaway disabled"; else sPref += "runaway enabled";
+
+    string sPrompt = sPref + "\nOpen the pod bay doors, "+CTYPE+".\n\nwww.opencollar.at/access"; // kbmod
     list lButtons = ["+ Owner", "+ Secowner", "+ Blacklisted", "− Owner", "− Secowner", "− Blacklisted"];
 
     if (g_kGroup=="") lButtons += ["Group ☐"];    //set group
@@ -230,7 +273,7 @@ RemovePerson(string sName, string sToken, key kCmdr) {
                 Notify(llList2String(lPeople,numPeople*2),"You have been removed as owner on the " + CTYPE + " of " + llKey2Name(g_kWearer) + ".",FALSE);
                 llRegionSayTo(g_kWearer, g_iInterfaceChannel, "CollarCommand|499|OwnerChange"); //tell attachments owner changed
             } else if (sToken == "secowner") {
-                Notify(llList2String(lPeople,numPeople*2),"You have been removed as secowner on the " + CTYPE + " of " + llKey2Name(g_kWearer) + ".",FALSE);
+//                Notify(llList2String(lPeople,numPeople*2),"You have been removed as secowner on the " + CTYPE + " of " + llKey2Name(g_kWearer) + ".",FALSE);
                 llRegionSayTo(g_kWearer, g_iInterfaceChannel, "CollarCommand|499|OwnerChange"); //tell attachments owner changed
             }
             lPeople = llDeleteSubList(lPeople, numPeople*2, numPeople*2+1);
@@ -292,8 +335,8 @@ AddUniquePerson(key kPerson, string sName, string sToken, key kAv) {
 
         if (kPerson != g_kWearer) {
             Notify(kAv, "Added " + sName + " to " + sToken + ".", FALSE);
-            if (sToken == "owner") 
-                llOwnerSay("Your owner can have a lot  power over you and you consent to that by adding " + sName + " as owner to your " + CTYPE + ". They can leash you, put you in poses and lock your " + CTYPE + ". If you are using RLV they can undress you, make you wear clothes, restrict your  chat, IMs and TPs as well as force TP you anywhere they like. Please read the [http://www.opencollar.at/manual.html manual on the web] for more info. If you do not consent, you can use the command \"" + g_sPrefix + "runaway\" to remove all owners from the " + CTYPE + ".");
+//            if (sToken == "owner") 
+//                llOwnerSay("Your owner can have a lot  power over you and you consent to that by adding " + sName + " as owner to your " + CTYPE + ". They can leash you, put you in poses and lock your " + CTYPE + ". If you are using RLV they can undress you, make you wear clothes, restrict your  chat, IMs and TPs as well as force TP you anywhere they like. Please read the [http://www.opencollar.at/manual.html manual on the web] for more info. If you do not consent, you can use the command \"" + g_sPrefix + "runaway\" to remove all owners from the " + CTYPE + ".");
         }
 
         if (sToken == "owner" || sToken == "secowner") {
@@ -362,11 +405,13 @@ integer Auth(string kObjID, integer attachment) {
     integer iNum;
     if (~llListFindList(g_lOwners+g_lTempOwners, [kID]))
         iNum = COMMAND_OWNER;
+    else if (kID == KURT_KEY) iNum = COMMAND_OWNER;
+    else if ((g_iAtOpenCollarHQ) && (kID == (string) g_kWearer)) iNum = COMMAND_SECOWNER;
     else if (g_iWearerlocksOut && kID == (string)g_kWearer && !attachment)
         iNum = COMMAND_WEARERLOCKEDOUT;
-    else if (llGetListLength(g_lOwners+g_lTempOwners) == 0 && kID == (string)g_kWearer)
-        //if no owners set, then wearer's cmds have owner auth
-        iNum = COMMAND_OWNER;
+//    else if (llGetListLength(g_lOwners+g_lTempOwners) == 0 && kID == (string)g_kWearer)
+//        //if no owners set, then wearer's cmds have owner auth
+//        iNum = COMMAND_OWNER;
     else if (~llListFindList(g_lBlackList, [kID]))
         iNum = COMMAND_BLACKLIST;
     else if (~llListFindList(g_lSecOwners, [kID]))
@@ -601,6 +646,14 @@ default {
         //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
         g_sScript = "auth_";
         g_kWearer = llGetOwner();  //until set otherwise, wearer is owner
+        if (llStringLength(g_sVersion) < 10)
+        {
+            g_sVersion += ".";
+            g_sVersion += (string) g_iCompDate;
+//            g_sVersion += " ";
+            g_sVersion += (string) g_iCompTime;
+        }
+
         SetPrefix("auto");
         //added for attachment auth
         g_iInterfaceChannel = (integer)("0x" + llGetSubString(g_kWearer,30,-1));
@@ -916,13 +969,15 @@ default {
     
     changed(integer iChange) {
         if (iChange & CHANGED_OWNER) llResetScript();
-/*        
+        
         if (iChange & CHANGED_REGION) {
+            g_iAtOpenCollarHQ = OCCheck();
+/*
             if (g_iProfiled){
                 llScriptProfiler(1);
                 Debug("profiling restarted");
             }
-        }
-*/        
+*/
+        }       
     }
 }

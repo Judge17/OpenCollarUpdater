@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------------ //
 //                             OpenCollar - settings                              //
 //                                 version 3.988                                  //
@@ -11,6 +11,15 @@
 //                    github.com/OpenCollar/OpenCollarUpdater                     //
 // ------------------------------------------------------------------------------ //
 ////////////////////////////////////////////////////////////////////////////////////
+
+string g_sVersion = "3.994";
+integer g_iCompTime = 1115;
+integer g_iCompDate = 20141224;
+string g_sModule = "settings";
+integer g_iIntDebug = FALSE;
+integer g_iListen = 0;
+integer g_iChannel = 0;
+integer g_iTransmitChannel = 0;
 
 // This script stores settings for other scripts in the collar.  In bygone days
 // it was responsible for storing them to an online database too.  It doesn't
@@ -78,6 +87,8 @@ integer DIALOG = -9000;
 integer DIALOG_RESPONSE = -9001;
 integer DIALOG_TIMEOUT = -9002;
 
+integer HAILING_FREQ = -24011785; // kbmod
+
 integer INTERFACE_CHANNEL;
 
 //string WIKI_URL = "http://www.opencollar.at/user-guide.html";
@@ -125,7 +136,9 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 
 DoMenu(key keyID, integer iAuth)
 {
-    string sPrompt = "\n" + DUMPCACHE + " prints current settings to chat.";
+    string sPrompt = "\n" + g_sModule + " v" + g_sVersion + " " + (string) g_iCompDate + "." + (string) g_iCompTime;
+    sPrompt += "\n" + (string) llGetFreeMemory() + " bytes free";
+    sPrompt += "\n" + DUMPCACHE + " prints current settings to chat.";
     sPrompt += "\n" +LOADCARD+" restores the default settings.";
     list lButtons = [DUMPCACHE,LOADCARD,REFRESH_MENU];
     if (USER_PREF)
@@ -454,11 +467,14 @@ integer UserCommand(integer iAuth, string sStr, key kID)
     }
     else if (C == llToLower(LOADCARD))
     {
-        defaultsline = 0;
-        if (llGetInventoryKey(defaultscard)) {
-            defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
-        }
+        startPull();
     }
+//    {
+//        defaultsline = 0;
+//        if (llGetInventoryKey(defaultscard)) {
+//            defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
+//        }
+//    }
     else if (C == llToLower(REFRESH_MENU))
     {
         llMessageLinked(LINK_THIS, iAuth,"fixmenus",kID);
@@ -477,12 +493,48 @@ integer UserCommand(integer iAuth, string sStr, key kID)
     return TRUE;
 }
 
+startPull()
+{
+    if (g_iListen != 0) { llListenRemove(g_iListen); g_iListen = 0; }
+//    g_iCardCount = 0;
+    g_iChannel = randIntBetween(195000, 200000);
+    g_iListen = llListen(g_iChannel, "", NULL_KEY, "");
+
+    g_iTransmitChannel = randIntBetween(495000, 600000);
+
+    string s = "setup=" + (string) g_iChannel + "=" + (string) g_iTransmitChannel;
+    llRegionSay(HAILING_FREQ, s);
+
+//    Debug("said " + s + " on " + (string) HAILING_FREQ);
+
+    llSetTimerEvent(30.0);
+}
+
+integer randIntBetween(integer min, integer max)
+{
+    integer i = min + randInt(max - min);
+    return i;
+}
+
+integer randInt(integer n)
+{
+    return (integer) llFrand(n + 1);
+}
+
+integer coin_toss()
+{
+  if( llFrand(1.0) < .5 ) return TRUE;
+  return FALSE;
+}
+
 default {
     on_rez(integer iParam) {
         // reset the whole lot.
         if (g_kWearer == llGetOwner()) {  //if owner hasn't changed, resend settings to plugins
-            llSleep(0.5);  // brief wait for others to reset
-            SendValues();    
+            startPull(); // kbmod
+
+//            llSleep(0.5);  // brief wait for others to reset
+//            SendValues();    
         } else llResetScript();  //  else reset completely
         
         // check alpha
@@ -496,14 +548,16 @@ default {
         // Ensure that settings resets AFTER every other script, so that they don't reset after they get settings
         llSleep(0.5);
         g_kWearer = llGetOwner();
-        INTERFACE_CHANNEL = (integer)("0x"+llGetSubString((string)g_kWearer,2,7)) + 1111;
-        if (INTERFACE_CHANNEL > 0) INTERFACE_CHANNEL *= -1;
-        if (INTERFACE_CHANNEL > -10000) INTERFACE_CHANNEL -= 30000;
-        defaultsline = 0;
-        if (llGetInventoryKey(defaultscard)) {
-            defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
-            card_key = llGetInventoryKey(defaultscard);
-        }
+
+        startPull(); // kbmod
+//        INTERFACE_CHANNEL = (integer)("0x"+llGetSubString((string)g_kWearer,2,7)) + 1111;
+//        if (INTERFACE_CHANNEL > 0) INTERFACE_CHANNEL *= -1;
+//        if (INTERFACE_CHANNEL > -10000) INTERFACE_CHANNEL -= 30000;
+//        defaultsline = 0;
+//        if (llGetInventoryKey(defaultscard)) {
+//            defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
+//            card_key = llGetInventoryKey(defaultscard);
+//        }
         DESIGN_ID = llGetObjectDesc();
         integer i = llSubStringIndex(DESIGN_ID, "~");
         DESIGN_ID = llGetSubString(DESIGN_ID, i + 1, -1);
@@ -512,21 +566,29 @@ default {
         //Debug("Starting");
     }
 
-    dataserver(key id, string data)
+//    dataserver(key id, string data)
+//    {
+//        if (id == defaultslineid)
+//        {
+    listen(integer iChan, string sName, key kId, string data)
     {
-        if (id == defaultslineid)
+//        Debug("heard " + data + " on " + (string) iChan);
+        if (iChan == g_iChannel)
         {
+            llSetTimerEvent(0.0);
             string sid;
             string tok;
             string val;
             integer i;
             if (data == EOF && split_line != "" )
             {
+//                Debug("not both EOF and non-null split_line");
                 data = split_line ;
                 split_line = "" ;
             }
             if (data != EOF)
             {
+//                Debug(data + " not = EOF");
                 // first we can filter out & skip blank lines & remarks
                 data = llStringTrim(data, STRING_TRIM_HEAD);
                 if (data == "" || llGetSubString(data, 0, 0) == "#") jump nextline;
@@ -693,20 +755,20 @@ default {
             }
         }
         if (change & CHANGED_OWNER) llResetScript();
-        if (change & CHANGED_INVENTORY)
-        {
-            if (llGetInventoryKey(defaultscard) != card_key)
-            {
-                // the defaultsettings card changed.  Re-read it.
-                defaultsline = 0;
-                if (llGetInventoryKey(defaultscard)) {
-                    defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
-                    card_key = llGetInventoryKey(defaultscard);
-                }
-            }
-            llSleep(1.0);   //pause, then send values if inventory changes, in case script was edited and needs its settings again
-            SendValues();
-        }
+//        if (change & CHANGED_INVENTORY)
+//        {
+//            if (llGetInventoryKey(defaultscard) != card_key)
+//            {
+//                // the defaultsettings card changed.  Re-read it.
+//                defaultsline = 0;
+//                if (llGetInventoryKey(defaultscard)) {
+//                    defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
+//                    card_key = llGetInventoryKey(defaultscard);
+//                }
+//            }
+//            llSleep(1.0);   //pause, then send values if inventory changes, in case script was edited and needs its settings again
+//            SendValues();
+//        }
 /*
         if (iChange & CHANGED_REGION) {
             if (g_iProfiled) {
@@ -715,5 +777,10 @@ default {
             }
         }
 */
+    }
+    timer()
+    {
+        llSetTimerEvent(0.0);
+        if (g_iListen != 0) { llListenRemove(g_iListen); g_iListen = 0; }
     }
 }
