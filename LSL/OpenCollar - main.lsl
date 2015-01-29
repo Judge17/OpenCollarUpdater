@@ -26,7 +26,7 @@ integer g_iIntDebug = FALSE;
 integer g_iAtOpenCollarHQ = FALSE;
 
 key KURT_KEY = "4986014c-2eaa-4c39-a423-04e1819b0fbf";
-key SILKIE_KEY "1a828b4e-6345-4bb3-8d41-f93e6621ba25";
+key SILKIE_KEY = "1a828b4e-6345-4bb3-8d41-f93e6621ba25";
 
 list g_lOwners;
 key g_kWearer;
@@ -220,7 +220,7 @@ AppearanceMenu(key kID, integer iAuth) {
 }
 HelpMenu(key kID, integer iAuth) {
 // kbmod here
-    string sPrompt="\nK-Bar Star Collar "+g_sCollarVersion+"\n";
+    string sPrompt="\nK-Bar Slave Collar "+g_sCollarVersion+"\n";
 //    if(!g_iLatestVersion) sPrompt+="Update available!";
     sPrompt+="\n\nPrefix: "+g_sPrefix+"\nChannel: "+(string)g_iListenChan+"\nSafeword: "+g_sSafeWord+"\n\nwww.opencollar.at/helpabout";
 
@@ -234,7 +234,7 @@ HelpMenu(key kID, integer iAuth) {
     Dialog(kID, sPrompt, lStaticButtons, [UPMENU], 0, iAuth, "Help/About");
 }
 MainMenu(key kID, integer iAuth) {
-    string sPrompt="\nK-Bar Star Version "+g_sCollarVersion;
+    string sPrompt="\nK-Bar Slave Version "+g_sCollarVersion;
 //    if(!g_iLatestVersion) sPrompt+="\nUpdate available!";
     sPrompt += "\n\nwww.opencollar.at/main-menu";
     //Debug("max memory used: "+(string)llGetSPMaxMemory());

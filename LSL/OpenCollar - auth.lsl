@@ -1,4 +1,4 @@
-﻿////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------------ //
 //                               OpenCollar - auth                                //
 //                                 version 3.994                                  //
@@ -192,7 +192,7 @@ FetchAvi(integer iAuth, string type, string name, key kAv) {
 AuthMenu(key kAv, integer iAuth) {
     string sPref = "\n" + g_sModule + " v" + g_sVersion;
     sPref += "\n" + (string) llGetFreeMemory() + " bytes free";
-    if (g_iAtOpenCollarHQ) sPref += "\n at OC HQ; "; else sPref += "\n Not at OC HQ; ";
+    if (g_iAtOpenCollarHQ) sPref += "\nat OC HQ; "; else sPref += "\nNot at OC HQ; ";
     if (g_iRunawayDisable) sPref += "runaway disabled"; else sPref += "runaway enabled";
 
     string sPrompt = sPref + "\nOpen the pod bay doors, "+CTYPE+".\n\nwww.opencollar.at/access"; // kbmod
