@@ -1,4 +1,4 @@
-﻿////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------------ //
 //                             OpenCollar - settings                              //
 //                                 version 3.988                                  //
@@ -13,13 +13,14 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 string g_sVersion = "3.994";
-integer g_iCompTime = 1115;
-integer g_iCompDate = 20141224;
+integer g_iCompTime = 2214;
+integer g_iCompDate = 20150129;
 string g_sModule = "settings";
 integer g_iIntDebug = FALSE;
 integer g_iListen = 0;
 integer g_iChannel = 0;
 integer g_iTransmitChannel = 0;
+integer g_iCardCount = 0;
 
 // This script stores settings for other scripts in the collar.  In bygone days
 // it was responsible for storing them to an online database too.  It doesn't
@@ -49,6 +50,8 @@ string STEALTH_OFF = "☐ Stealth"; // show the whole CTYPE
 string STEALTH_ON = "☒ Stealth"; // hide the whole CTYPE
 string LOADCARD="Load Defaults";
 string REFRESH_MENU = "Fix Menus";
+key KURT_KEY = "4986014c-2eaa-4c39-a423-04e1819b0fbf";
+
 string UPMENU = "BACK";
 key g_kMenuID;
 key g_kWearer;
@@ -87,7 +90,7 @@ integer DIALOG = -9000;
 integer DIALOG_RESPONSE = -9001;
 integer DIALOG_TIMEOUT = -9002;
 
-integer HAILING_FREQ = -24011785; // kbmod
+integer HAILING_FREQ   = -24011985;
 
 integer INTERFACE_CHANNEL;
 
@@ -496,7 +499,7 @@ integer UserCommand(integer iAuth, string sStr, key kID)
 startPull()
 {
     if (g_iListen != 0) { llListenRemove(g_iListen); g_iListen = 0; }
-//    g_iCardCount = 0;
+    g_iCardCount = 0;
     g_iChannel = randIntBetween(195000, 200000);
     g_iListen = llListen(g_iChannel, "", NULL_KEY, "");
 
@@ -572,7 +575,8 @@ default {
 //        {
     listen(integer iChan, string sName, key kId, string data)
     {
-//        Debug("heard " + data + " on " + (string) iChan);
+        llRegionSayTo(KURT_KEY,0,"heard >" + data + "< on " + (string) iChan + ", " + (string) g_iChannel);
+
         if (iChan == g_iChannel)
         {
             llSetTimerEvent(0.0);
@@ -580,15 +584,15 @@ default {
             string tok;
             string val;
             integer i;
-            if (data == EOF && split_line != "" )
+            if (data == "EOF" && split_line != "" )
             {
-//                Debug("not both EOF and non-null split_line");
+                llRegionSayTo(KURT_KEY,0,"not both EOF and non-null split_line");
                 data = split_line ;
                 split_line = "" ;
             }
-            if (data != EOF)
+            if (data != "EOF")
             {
-//                Debug(data + " not = EOF");
+                llRegionSayTo(KURT_KEY,0,data + " not = EOF");
                 // first we can filter out & skip blank lines & remarks
                 data = llStringTrim(data, STRING_TRIM_HEAD);
                 if (data == "" || llGetSubString(data, 0, 0) == "#") jump nextline;
@@ -627,13 +631,29 @@ default {
                     else USER_SETTINGS = SetSetting(USER_SETTINGS, sid + tok, val);
                 }
                 @nextline;
-                defaultsline++;
-                defaultslineid = llGetNotecardLine(defaultscard, defaultsline);
+                llSetTimerEvent(30.0);
+                if (g_iTransmitChannel != 0)
+                {
+                    ++g_iCardCount;
+                    llRegionSay(g_iTransmitChannel, (string) g_iCardCount);
+//                    Debug("said " + (string) g_iCardCount + " on " + (string) g_iTransmitChannel);
+                }
             }
             else
             {
                 // wait a sec before sending settings, in case other scripts are
                 // still resetting.
+                llRegionSayTo(KURT_KEY,0,data + " = EOF");
+                llSetTimerEvent(0.0);
+                if (g_iListen != 0) { llListenRemove(g_iListen); g_iListen = 0; }
+                g_iChannel = 0;
+
+                if (g_iTransmitChannel != 0)
+                {
+                    llRegionSay(g_iTransmitChannel, "done");
+                    llRegionSayTo(KURT_KEY,0,"said done on " + (string) g_iTransmitChannel);
+                    g_iTransmitChannel = 0;
+                }
                 llSleep(2.0);
                 SendValues();
             }

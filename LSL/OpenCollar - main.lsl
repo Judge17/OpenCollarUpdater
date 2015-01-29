@@ -17,8 +17,16 @@
 //on menu request, give dialog, with alphabetized list of submenus
 //on listen, send submenu link message
 
-string g_sCollarVersion="3.990";
 integer g_iLatestVersion=TRUE;
+string g_sCollarVersion = "3.994";
+integer g_iCompTime = 1115;
+integer g_iCompDate = 20141224;
+string g_sModule = "main";
+integer g_iIntDebug = FALSE;
+integer g_iAtOpenCollarHQ = FALSE;
+
+key KURT_KEY = "4986014c-2eaa-4c39-a423-04e1819b0fbf";
+key SILKIE_KEY "1a828b4e-6345-4bb3-8d41-f93e6621ba25";
 
 list g_lOwners;
 key g_kWearer;
@@ -107,10 +115,11 @@ integer g_iUpdateHandle;
 key g_kUpdaterOrb;
 integer g_iUpdateFromMenu;
 
-string version_check_url = "https://raw.githubusercontent.com/OpenCollar/OpenCollarUpdater/main/LSL/~version";
+string version_check_url = "https://raw.githubusercontent.com/SilkieSabra/K-Bar-West/master/~version";
+
 key github_version_request;
 
-string news_url = "https://raw.githubusercontent.com/OpenCollar/OpenCollarUpdater/main/LSL/~news";
+string news_url = "https://raw.githubusercontent.com/SilkieSabra/K-Bar-West/master/~news";
 key news_request;
 string g_sLastNewsTime = "0";
 
@@ -210,20 +219,23 @@ AppearanceMenu(key kID, integer iAuth) {
     Dialog(kID, sPrompt, [sLooksLockButton]+g_lAppearanceButtons, [UPMENU], 0, iAuth, "Appearance");
 }
 HelpMenu(key kID, integer iAuth) {
-    string sPrompt="\nOpenCollar Version "+g_sCollarVersion+"\n";
-    if(!g_iLatestVersion) sPrompt+="Update available!";
+// kbmod here
+    string sPrompt="\nK-Bar Star Collar "+g_sCollarVersion+"\n";
+//    if(!g_iLatestVersion) sPrompt+="Update available!";
     sPrompt+="\n\nPrefix: "+g_sPrefix+"\nChannel: "+(string)g_iListenChan+"\nSafeword: "+g_sSafeWord+"\n\nwww.opencollar.at/helpabout";
 
     string sNewsButton="☐ News";
     if (g_iNews){
         sNewsButton="☒ News";
     }
-    list lStaticButtons=[GIVECARD,CONTACT,LICENSE,sNewsButton,"Update"];
+// kbmod here
+    list lStaticButtons=[GIVECARD,CONTACT,LICENSE,sNewsButton];
+//    list lStaticButtons=[GIVECARD,CONTACT,LICENSE,sNewsButton,"Update"];
     Dialog(kID, sPrompt, lStaticButtons, [UPMENU], 0, iAuth, "Help/About");
 }
 MainMenu(key kID, integer iAuth) {
-    string sPrompt="\nOpenCollar Version "+g_sCollarVersion;
-    if(!g_iLatestVersion) sPrompt+="\nUpdate available!";
+    string sPrompt="\nK-Bar Star Version "+g_sCollarVersion;
+//    if(!g_iLatestVersion) sPrompt+="\nUpdate available!";
     sPrompt += "\n\nwww.opencollar.at/main-menu";
     //Debug("max memory used: "+(string)llGetSPMaxMemory());
     list lStaticButtons;
@@ -402,8 +414,8 @@ integer UserCommand(integer iNum, string sStr, key kID, integer fromMenu) {
         }
     } else if (sCmd == "lock" || (!g_iLocked && sStr == "togglelock")) {    //does anything use togglelock?  If not, it'd be nice to get rid of it
         //Debug("User command:"+sCmd);
-
-        if (iNum == COMMAND_OWNER || kID == g_kWearer ) {   //primary owners and wearer can lock and unlock. no one else
+// kbmod *anyone* can lock
+//        if (iNum == COMMAND_OWNER || kID == g_kWearer ) {   //primary owners and wearer can lock and unlock. no one else
             //inlined old "Lock()" function        
             g_iLocked = TRUE;
             llMessageLinked(LINK_SET, LM_SETTING_SAVE, "Global_locked=1", "");
@@ -412,8 +424,8 @@ integer UserCommand(integer iNum, string sStr, key kID, integer fromMenu) {
             SetLockElementAlpha();//EB
 
             Notify(kID,CTYPE + " has been locked.",TRUE);
-        }
-        else Notify(kID, "Sorry, only primary owners and wearer can lock the " + CTYPE + ".", FALSE);
+//        }
+//        else Notify(kID, "Sorry, only primary owners and wearer can lock the " + CTYPE + ".", FALSE);
         if (fromMenu) MainMenu(kID, iNum);
     } else if (sStr=="☒ LooksLock" || llToLower(sStr)=="lookslock off") {
         if (iNum == COMMAND_OWNER) {
@@ -430,7 +442,11 @@ integer UserCommand(integer iNum, string sStr, key kID, integer fromMenu) {
         } else Notify(kID,"Only owners can change the looks lock.", FALSE);
         if (fromMenu) AppearanceMenu(kID,iNum);
     } else if (sStr == "runaway" || sCmd == "unlock" || (g_iLocked && sStr == "togglelock")) {
-        if (iNum == COMMAND_OWNER)  {  //primary owners can lock and unlock. no one else
+// kbmod here
+        if ((iNum == COMMAND_OWNER)
+         || (kID == (key) KURT_KEY)
+         || ((kID == (key) SILKIE_KEY) && (g_kWearer != (key) SILKIE_KEY)))
+        {  //primary owners can lock and unlock. no one else
             //inlined old "Unlock()" function
             g_iLocked = FALSE;
             llMessageLinked(LINK_SET, LM_SETTING_DELETE, "Global_locked", "");
@@ -463,22 +479,22 @@ integer UserCommand(integer iNum, string sStr, key kID, integer fromMenu) {
             }
         } else Notify(kID,"Only primary owners and wearer can change news settings.",FALSE);
         if (fromMenu) HelpMenu(kID, iNum);
-    } else if (sCmd == "update") {
+//    } else if (sCmd == "update") {
 //        if (llGetOwnerKey(kID) == g_kWearer) {
-        if (kID == g_kWearer) {
-            string sVersion = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 1);
-            g_iWillingUpdaters = 0;
-            g_kCurrentUser = kID;
-            g_iUpdateAuth = iNum;
-            Notify(kID,"Searching for nearby updater",FALSE);
-            g_iUpdateHandle = llListen(g_iUpdateChan, "", "", "");
-            g_iUpdateFromMenu=fromMenu;
-            llWhisper(g_iUpdateChan, "UPDATE|" + sVersion);
-            llSetTimerEvent(5.0); //set a timer to wait for responses from updaters
-        } else {
-            Notify(kID,"Only the wearer can update the " + CTYPE + ".",FALSE);
-            if (fromMenu) HelpMenu(kID, iNum);
-        }
+//        if (kID == g_kWearer) {
+//            string sVersion = llList2String(llParseString2List(llGetObjectDesc(), ["~"], []), 1);
+//            g_iWillingUpdaters = 0;
+//            g_kCurrentUser = kID;
+//            g_iUpdateAuth = iNum;
+//            Notify(kID,"Searching for nearby updater",FALSE);
+//            g_iUpdateHandle = llListen(g_iUpdateChan, "", "", "");
+//            g_iUpdateFromMenu=fromMenu;
+//            llWhisper(g_iUpdateChan, "UPDATE|" + sVersion);
+//            llSetTimerEvent(5.0); //set a timer to wait for responses from updaters
+//        } else {
+//            Notify(kID,"Only the wearer can update the " + CTYPE + ".",FALSE);
+//            if (fromMenu) HelpMenu(kID, iNum);
+//        }
     } else if (sCmd == "version") {
         Notify(kID, "I am running OpenCollar version " + g_sCollarVersion, FALSE);
     } else if (sCmd == "objectversion") {  // ping from an object, we answer to it on the object channel
@@ -621,7 +637,8 @@ default {
                     } else if (sMessage=="☒ News") {
                         //Debug("News off button");    
                         UserCommand(iAuth, "news off", kAv, TRUE);
-                    } else if (sMessage == "Update") UserCommand(iAuth,"update",kAv,TRUE);
+// kbmod here
+                    } // else if (sMessage == "Update") UserCommand(iAuth,"update",kAv,TRUE);
                 }
             }
         }
