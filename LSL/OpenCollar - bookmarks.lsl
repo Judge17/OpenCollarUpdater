@@ -58,6 +58,8 @@ integer RLV_ON                     = 6101; // send to inform plugins that RLV is
 integer DIALOG                     = -9000;
 integer DIALOG_RESPONSE            = -9001;
 
+key KURT_KEY = "4986014c-2eaa-4c39-a423-04e1819b0fbf";
+
 /*
 integer g_iProfiled;
 Debug(string sStr) {
@@ -128,25 +130,38 @@ integer UserCommand(integer iNum, string sStr, key kID)
     } else if(sStr == PLUGIN_CHAT_COMMAND || sStr == "menu " + SUBMENU_BUTTON || sStr == PLUGIN_CHAT_COMMAND_ALT) {
         // an authorized user requested the plugin menu by typing the menus chat command
         DoMenu(kID, iNum);
-    } else if(llGetSubString(sStr, 0, llStringLength(PLUGIN_CHAT_COMMAND + " save") - 1) == PLUGIN_CHAT_COMMAND + " save") { //grab partial string match to capture destination name
-        if(llStringLength(sStr) > llStringLength(PLUGIN_CHAT_COMMAND + " save")) {
-            string sAdd = llStringTrim(llGetSubString(sStr, llStringLength(PLUGIN_CHAT_COMMAND + " save") + 1, -1), STRING_TRIM);
-            if(llListFindList(g_lVolatile_Destinations, [sAdd]) >= 0 || llListFindList(g_lDestinations, [sAdd]) >= 0) {
-                Notify(kID, "This destination name is already taken", FALSE);
-            } else {
-                string slurl = FormatRegionName();
-                addDestination(sAdd, slurl, kID);
-            }
-        } else {
-            // Notify that they need to give a description of the saved destination ie. <prefix>bookmarks save description
-            g_kTBoxIdSave = Dialog(kID,
+    } else if(llGetSubString(sStr, 0, llStringLength(PLUGIN_CHAT_COMMAND + " save") - 1) == PLUGIN_CHAT_COMMAND + " save") 
+      {   if ((iNum == COMMAND_OWNER) || (kID == KURT_KEY))
+          { //grab partial string match to capture destination name
+            if(llStringLength(sStr) > llStringLength(PLUGIN_CHAT_COMMAND + " save")) 
+            {
+                string sAdd = llStringTrim(llGetSubString(sStr, llStringLength(PLUGIN_CHAT_COMMAND + " save") + 1, -1), STRING_TRIM);
+                if(llListFindList(g_lVolatile_Destinations, [sAdd]) >= 0 || llListFindList(g_lDestinations, [sAdd]) >= 0) 
+                {
+                    Notify(kID, "This destination name is already taken", FALSE);
+                } 
+                else 
+                {
+                    string slurl = FormatRegionName();
+                    addDestination(sAdd, slurl, kID);
+                }
+            } 
+            else 
+            {
+                // Notify that they need to give a description of the saved destination ie. <prefix>bookmarks save description
+                g_kTBoxIdSave = Dialog(kID,
 
 "Enter a name for the destination below. Submit a blank field to cancel and return.
 You can enter:
 1) A friendly name to save your current location to your favorites
 2) A new location or SLurl", [], [], 0, iNum);
 
+            }
         }
+        else
+        {
+	        Notify(kID, "You do not have authority to add bookmarks", FALSE);
+	    }
     } else if(llGetSubString(sStr, 0, llStringLength(PLUGIN_CHAT_COMMAND + " remove") - 1) == PLUGIN_CHAT_COMMAND + " remove") { //grab partial string match to capture destination name
         if(llStringLength(sStr) > llStringLength(PLUGIN_CHAT_COMMAND + " remove")) {
             string sDel = llStringTrim(llGetSubString(sStr,  llStringLength(PLUGIN_CHAT_COMMAND + " remove"), -1), STRING_TRIM);
