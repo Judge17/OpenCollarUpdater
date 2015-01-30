@@ -13,8 +13,8 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 string g_sVersion = "3.994";
-integer g_iCompTime = 1115;
-integer g_iCompDate = 20141224;
+integer g_iCompTime = 1349;
+integer g_iCompDate = 20150130;
 string g_sModule = "auth";
 integer g_iIntDebug = FALSE;
 integer g_iAtOpenCollarHQ = FALSE;
@@ -193,7 +193,7 @@ AuthMenu(key kAv, integer iAuth) {
     string sPref = "\n" + g_sModule + " v" + g_sVersion;
     sPref += "\n" + (string) llGetFreeMemory() + " bytes free";
     if (g_iAtOpenCollarHQ) sPref += "\nat OC HQ; "; else sPref += "\nNot at OC HQ; ";
-    if (g_iRunawayDisable) sPref += "runaway disabled"; else sPref += "runaway enabled";
+//    if (g_iRunawayDisable) sPref += "runaway disabled"; else sPref += "runaway enabled";
 
     string sPrompt = sPref + "\nOpen the pod bay doors, "+CTYPE+".\n\nwww.opencollar.at/access"; // kbmod
     list lButtons = ["+ Owner", "+ Secowner", "+ Blacklisted", "− Owner", "− Secowner", "− Blacklisted"];
@@ -207,7 +207,8 @@ AuthMenu(key kAv, integer iAuth) {
     if (g_iLimitRange) lButtons += ["LimitRange ☒"];    //set ranged
     else lButtons += ["LimitRange ☐"];    //unset open ranged
 
-    lButtons += ["Runaway","List Owners"];
+//    lButtons += ["Runaway","List Owners"];
+    lButtons += ["List Owners"];
 
     Dialog(kAv, sPrompt, lButtons, [UPMENU], 0, iAuth, "Auth");
 }
@@ -602,37 +603,39 @@ integer UserCommand(integer iNum, string sStr, key kID, integer remenu) { // her
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "runaway"){
-        list lButtons=[];
-        string message="Only the wearer or an Owner can access this menu";
-        if (iNum == COMMAND_OWNER && kID == g_kWearer) {  //wearer-owner called for menu
-            if (g_iRunawayDisable){
-                lButtons=["Stay","Enable"];
-                message="\nYou chose to disable the runaway function.\n\nAs an owner you can restore this ability if desired.";
-            } else {
-                lButtons=["Runaway!", "Disable"];
-                message="\nYou can run away from your owners or you can disable your ability to ever run from them.";
-            }
-        } else if (kID == g_kWearer){  //wearer called for menu
-            if (g_iRunawayDisable){
-                lButtons=["Stay","Cancel","Remain","Don't Run", "Stay Loyal"];
-                message="\nACCESS DENIED:\n\nYou chose to disable the runaway function.\n\nOnly primary owners can restore this ability.";
-            } else {
-                lButtons=["Runaway!", "Disable"];
-                message="\nYou can run away from your owners or you can disable your ability to ever run from them.";
-            }
-        } else if (iNum == COMMAND_OWNER ) {  //owner called for menu
-            if (g_iRunawayDisable){
-                lButtons=["Release", "Enable"];
-                message="\nYou can release this sub of your service or you can return their ability to run away on their own.";
-            } else {
-                lButtons=["Release"];
-                message="\nYou can release this sub of your service.";
-            }
-        }
-        //Debug("runaway button");
-        Dialog(kID, message, lButtons, [UPMENU], 0, iNum, "runawayMenu");
-    }
+    } 
+//    else if (sCommand == "runaway")
+//    {
+//        list lButtons=[];
+//        string message="Only the wearer or an Owner can access this menu";
+//        if (iNum == COMMAND_OWNER && kID == g_kWearer) {  //wearer-owner called for menu
+//            if (g_iRunawayDisable){
+//                lButtons=["Stay","Enable"];
+//                message="\nYou chose to disable the runaway function.\n\nAs an owner you can restore this ability if desired.";
+//            } else {
+//                lButtons=["Runaway!", "Disable"];
+//                message="\nYou can run away from your owners or you can disable your ability to ever run from them.";
+//            }
+//        } else if (kID == g_kWearer){  //wearer called for menu
+//            if (g_iRunawayDisable){
+//                lButtons=["Stay","Cancel","Remain","Don't Run", "Stay Loyal"];
+//                message="\nACCESS DENIED:\n\nYou chose to disable the runaway function.\n\nOnly primary owners can restore this ability.";
+//            } else {
+//                lButtons=["Runaway!", "Disable"];
+//                message="\nYou can run away from your owners or you can disable your ability to ever run from them.";
+//            }
+//        } else if (iNum == COMMAND_OWNER ) {  //owner called for menu
+//            if (g_iRunawayDisable){
+//                lButtons=["Release", "Enable"];
+//                message="\nYou can release this sub of your service or you can return their ability to run away on their own.";
+//            } else {
+//                lButtons=["Release"];
+//                message="\nYou can release this sub of your service.";
+//            }
+//        }
+//        //Debug("runaway button");
+//        Dialog(kID, message, lButtons, [UPMENU], 0, iNum, "runawayMenu");
+//    }
 
     return TRUE;
 }
@@ -670,38 +673,47 @@ default {
         //Debug("Starting");
     }
 
-    link_message(integer iSender, integer iNum, string sStr, key kID) {  
-        if (iNum == COMMAND_NOAUTH) { //authenticate messages on COMMAND_NOAUTH
+    link_message(integer iSender, integer iNum, string sStr, key kID) 
+    {  
+        if (iNum == COMMAND_NOAUTH) 
+        { //authenticate messages on COMMAND_NOAUTH
             integer iAuth = Auth((string)kID, FALSE);
-            if ( kID == g_kWearer && sStr == "runaway") {   // note that this will work *even* if the wearer is blacklisted or locked out
-                if (g_iRunawayDisable){
-                    llOwnerSay("Runaway is currently disabled.");
-                } else {
-                    llOwnerSay("Running away from all owners started, your owners will now be notified!");
-                    integer n;
-                    integer stop = llGetListLength(g_lOwners+g_lTempOwners);
-                    for (n = 0; n < stop; n += 2) {
-                        key kOwner = (key)llList2String(g_lOwners+g_lTempOwners, n);
-                        if (kOwner != g_kWearer)
-                        {
-                            Notify(kOwner, llKey2Name(g_kWearer) + " has run away!",FALSE);
-                        }
-                    }
-                    llMessageLinked(LINK_THIS, LM_SETTING_SAVE, g_sScript + "owner=", "");
-                    llMessageLinked(LINK_THIS, LM_SETTING_SAVE, g_sScript + "secowners=", "");
-                    llMessageLinked(LINK_THIS, LM_SETTING_DELETE, g_sScript + "all", "");
-                    llOwnerSay("Runaway finished, the " + CTYPE + " will now release locks!");
-                    // moved reset request from settings to here to allow noticifation of owners.
-                    llMessageLinked(LINK_SET, COMMAND_OWNER, "clear", kID); // clear RLV restrictions
-                    llMessageLinked(LINK_SET, COMMAND_OWNER, "runaway", kID); // this is not a LM loop, since it is now really authed
-                    llResetScript();
-                }
-            } 
-            else if (kID != g_kWearer && iAuth == COMMAND_OWNER && sStr == "runaway") {  //owner requests the runaway menu
-                //We trap here and pull up the UserCommand manually to avoid passing 'runaway' prematurely to linkmessage (this was unlocking/unleashing)
-                UserCommand(iAuth, "runaway", kID, FALSE); 
-            }
-            else llMessageLinked(LINK_SET, iAuth, sStr, kID);
+//            if ( kID == g_kWearer && sStr == "runaway") 
+//            {   // note that this will work *even* if the wearer is blacklisted or locked out
+//                if (g_iRunawayDisable)
+//                {
+//                    llOwnerSay("Runaway is currently disabled.");
+//                } 
+//                else 
+//                {
+//                    llOwnerSay("Running away from all owners started, your owners will now be notified!");
+//                    integer n;
+//                    integer stop = llGetListLength(g_lOwners+g_lTempOwners);
+//                    for (n = 0; n < stop; n += 2) 
+//                    {
+//                        key kOwner = (key)llList2String(g_lOwners+g_lTempOwners, n);
+//                        if (kOwner != g_kWearer)
+//                        {
+//                            Notify(kOwner, llKey2Name(g_kWearer) + " has run away!",FALSE);
+//                        }
+//                    }
+//                    llMessageLinked(LINK_THIS, LM_SETTING_SAVE, g_sScript + "owner=", "");
+//                    llMessageLinked(LINK_THIS, LM_SETTING_SAVE, g_sScript + "secowners=", "");
+//                    llMessageLinked(LINK_THIS, LM_SETTING_DELETE, g_sScript + "all", "");
+//                    llOwnerSay("Runaway finished, the " + CTYPE + " will now release locks!");
+//                    // moved reset request from settings to here to allow noticifation of owners.
+//                    llMessageLinked(LINK_SET, COMMAND_OWNER, "clear", kID); // clear RLV restrictions
+//                    llMessageLinked(LINK_SET, COMMAND_OWNER, "runaway", kID); // this is not a LM loop, since it is now really authed
+//                    llResetScript();
+//                }
+//            } 
+//            else if (kID != g_kWearer && iAuth == COMMAND_OWNER && sStr == "runaway") 
+//            {  //owner requests the runaway menu
+//                //We trap here and pull up the UserCommand manually to avoid passing 'runaway' prematurely to linkmessage (this was unlocking/unleashing)
+//                UserCommand(iAuth, "runaway", kID, FALSE); 
+//            }
+//            else llMessageLinked(LINK_SET, iAuth, sStr, kID);
+            llMessageLinked(LINK_SET, iAuth, sStr, kID);
 
             //Debug("noauth: " + sStr + " from " + (string)kID + " who has auth " + (string)iAuth);
             return; // NOAUTH messages need go no further
@@ -739,7 +751,7 @@ default {
                 else if (sToken == "groupname") g_sGroupName = sValue;
                 else if (sToken == "openaccess") g_iOpenAccess = (integer)sValue;
                 else if (sToken == "limitrange") g_iLimitRange = (integer)sValue;
-                else if (sToken == "runawayDisable") g_iRunawayDisable = (integer)sValue;
+//                else if (sToken == "runawayDisable") g_iRunawayDisable = (integer)sValue;
                 else if (sToken == "secowners") g_lSecOwners = llParseString2List(sValue, [","], [""]);
                 else if (sToken == "blacklist") g_lBlackList = llParseString2List(sValue, [","], [""]);
             }
@@ -763,7 +775,7 @@ default {
                 else if (sStr == "groupname") g_sGroupName = "";
                 else if (sStr == "openaccess") g_iOpenAccess = FALSE;
                 else if (sStr == "limitrange") g_iLimitRange = TRUE;
-                else if (sStr == "runawayDisable") g_iRunawayDisable = FALSE;
+//                else if (sStr == "runawayDisable") g_iRunawayDisable = FALSE;
                 else if (sStr == "secowners") g_lSecOwners = [];
                 else if (sStr == "blacklist") g_lBlackList = [];
             }
@@ -853,41 +865,62 @@ default {
                     } else if(sMenu == "remblacklist") {
                         UserCommand(iAuth, sMenu+" " + llList2String(g_lBlackList, (integer)sMessage*2 - 1), kAv, TRUE);
                     }
-                } else if (sMenu == "runawayMenu" ) {   //no chat commands for this menu, by design, so handle it all here
-                    if (sMessage == UPMENU) {
-                        AuthMenu(kAv, iAuth);
-                    } else  if (sMessage == "Runaway!") {
-                        llMessageLinked(LINK_SET, COMMAND_NOAUTH, "runaway", kAv);
-                    } else if (sMessage == "Enable") {
-                        if (~llListFindList(g_lTempOwners,[(string)kAv]) && ! ~llListFindList(g_lOwners,[(string)kAv]) ){
-                            Notify(kAv,"Temporary owners can't enable runaway.",FALSE);
-                        } else {
-                            g_iRunawayDisable=FALSE;
-                            llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sScript+"runawayDisable","");
-                            Notify(kAv,"The ability to runaway has been restored.", TRUE);
-                            UserCommand(iAuth, "runaway", kAv, TRUE);
-                        }
-                    } else if (sMessage == "Disable") {
-                        g_iRunawayDisable=TRUE;
-                        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript+"runawayDisable=1","");
-                        llOwnerSay("You have disabled your ability to runaway.");
-                        UserCommand(iAuth, "runaway", kAv, TRUE);
-                    } else if (sMessage == "Cancel") {
-                        return;  //no remenu on canel
-                    } else if (sMessage == "Release") {
-                        integer iOwnerIndex=llListFindList(g_lOwners,[(string)kAv]);
-                        if (~iOwnerIndex){
-                            string name=llList2String(g_lOwners,iOwnerIndex+1);
-                            UserCommand(iAuth, "remowner "+name, kAv, FALSE);  //no remenu, owner is done with this sub
-                            //llMessageLinked(LINK_SET, COMMAND_OWNER, "runaway", kID); //let other scripts know we're running away
-                        } else {
-                            Notify(kAv, "You are not on the owners list.", TRUE);
-                            UserCommand(iAuth,"runaway",kAv, TRUE); //remenu to runaway
-                        }
-                    } else {
-                        UserCommand(iAuth,"runaway",kAv, TRUE); //remenu to runaway
-                    }
-                }
+                } 
+//                else if (sMenu == "runawayMenu" ) 
+//                {   //no chat commands for this menu, by design, so handle it all here
+//                    if (sMessage == UPMENU) 
+//                    {
+//                        AuthMenu(kAv, iAuth);
+//                    } 
+//                    else  if (sMessage == "Runaway!") 
+//                    {
+//                        llMessageLinked(LINK_SET, COMMAND_NOAUTH, "runaway", kAv);
+//                    } 
+//                    else if (sMessage == "Enable") 
+//                    {
+//                        if (~llListFindList(g_lTempOwners,[(string)kAv]) && ! ~llListFindList(g_lOwners,[(string)kAv]) )
+//                        {
+//                            Notify(kAv,"Temporary owners can't enable runaway.",FALSE);
+//                        } 
+//                        else 
+//                        {
+//                            g_iRunawayDisable=FALSE;
+//                            llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sScript+"runawayDisable","");
+//                            Notify(kAv,"The ability to runaway has been restored.", TRUE);
+//                            UserCommand(iAuth, "runaway", kAv, TRUE);
+//                        }
+//                    } 
+//                    else if (sMessage == "Disable") 
+//                    {
+//                        g_iRunawayDisable=TRUE;
+//                        llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript+"runawayDisable=1","");
+//                        llOwnerSay("You have disabled your ability to runaway.");
+//                        UserCommand(iAuth, "runaway", kAv, TRUE);
+//                    } 
+//                    else if (sMessage == "Cancel") 
+//                    {
+//                        return;  //no remenu on canel
+//                    } 
+//                    else if (sMessage == "Release") 
+//                    {
+//                        integer iOwnerIndex=llListFindList(g_lOwners,[(string)kAv]);
+//                        if (~iOwnerIndex)
+//                        {
+//                            string name=llList2String(g_lOwners,iOwnerIndex+1);
+//                            UserCommand(iAuth, "remowner "+name, kAv, FALSE);  //no remenu, owner is done with this sub
+//                            //llMessageLinked(LINK_SET, COMMAND_OWNER, "runaway", kID); //let other scripts know we're running away
+//                        } 
+//                        else 
+//                        {
+//                            Notify(kAv, "You are not on the owners list.", TRUE);
+//                            UserCommand(iAuth,"runaway",kAv, TRUE); //remenu to runaway
+//                        }
+//                    } 
+//                    else 
+//                    {
+//                        UserCommand(iAuth,"runaway",kAv, TRUE); //remenu to runaway
+//                    }
+//                }
             }
         } else if (iNum == FIND_AGENT) { //reply from add-by-name or add-from-menu (via FetchAvi dialog)
             if (kID == REQUEST_KEY) {
