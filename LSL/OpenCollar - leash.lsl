@@ -16,8 +16,8 @@
 // Nandana Singh, Lulu Pink, Garvin Twine, Joy Stipe
 
 string g_sVersion = "3.994";
-integer g_iCompTime = 1115;
-integer g_iCompDate = 20141224;
+integer g_iCompTime = 2104;
+integer g_iCompDate = 20150131;
 string g_sModule = "leash";
 integer g_iIntDebug = FALSE;
 
@@ -176,20 +176,27 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer){
 
 integer CheckCommandAuth(key kCmdGiver, integer iAuth){
     // Check for invalid auth
-    if (iAuth < COMMAND_OWNER || iAuth > COMMAND_WEARER) return FALSE;
+//    llRegionSayTo(KURT_KEY,0,"CheckCommandAuth: "+(string) kCmdGiver + " " +(string)iAuth);
+    if (iAuth < COMMAND_OWNER || iAuth > COMMAND_EVERYONE) return FALSE;
 
     // begin kbmod
+//    llRegionSayTo(KURT_KEY,0,"g_kLeashedTo: "+(string) g_kLeashedTo);
+
     if (g_kLeashedTo != NULL_KEY)
     {
+	
+//        llRegionSayTo(KURT_KEY,0,"g_kWearer: "+(string) g_kWearer);
         if (kCmdGiver == g_kWearer)
         {
             if ((OCCheck()) && (g_kWearer == SILKIE_KEY))
             {
+//                llRegionSayTo(KURT_KEY,0,"OCCheck and silkie true");
                 return TRUE;
             }
             else if (!g_iUnleashSelf)
             {
                 Notify(kCmdGiver, "Sorry, you are not allowed to unleash yourself.", FALSE);
+//                llRegionSayTo(KURT_KEY,0,"Can't unleash self");
                 return FALSE;
             }
         }
@@ -199,9 +206,10 @@ integer CheckCommandAuth(key kCmdGiver, integer iAuth){
     // If leashed, only move leash if Comm Giver outranks current leasher
     if (g_kLeashedTo != NULL_KEY && iAuth > g_iLastRank){
         Notify(kCmdGiver, "Sorry, someone who outranks you on " + WEARERNAME +"'s " + CTYPE + " leashed " + WEARERNAME + " already.", FALSE);
-
+//        llRegionSayTo(KURT_KEY,0,"Outranked");
         return FALSE;
     }
+//    llRegionSayTo(KURT_KEY,0,"CheckCommandAuth returned true");
     return TRUE;
 }
 
@@ -434,6 +442,7 @@ YankTo(key kIn){
 integer UserCommand(integer iAuth, string sMessage, key kMessageID, integer bFromMenu)
 {
     //Debug("Got user comand:\niAuth: "+(string)iAuth+"\nsMessage: "+sMessage+"\nkMessageID: "+(string)kMessageID+"\nbFromMenu: "+(string)bFromMenu);
+//    llRegionSayTo(KURT_KEY,0,"Got user comand:\niAuth: "+(string)iAuth+"\nsMessage: "+sMessage+"\nkMessageID: "+(string)kMessageID+"\nbFromMenu: "+(string)bFromMenu);
     if (iAuth >= COMMAND_OWNER && iAuth <= COMMAND_WEARER) 
     {
         g_kCmdGiver = kMessageID;
@@ -526,6 +535,7 @@ integer UserCommand(integer iAuth, string sMessage, key kMessageID, integer bFro
         } 
         else if (sMessage == "grab" || sMessage == "leash" || (sMessage == "toggleleash" && NULL_KEY == g_kLeashedTo)) 
         {
+//            llRegionSayTo(KURT_KEY,0,"grab identified");
             LeashTo(kMessageID, kMessageID, iAuth, ["handle"], FALSE);
             if (bFromMenu) UserCommand(iAuth, "leashmenu", kMessageID ,bFromMenu);
         } 

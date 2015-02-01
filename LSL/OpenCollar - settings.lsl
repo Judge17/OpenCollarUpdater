@@ -13,8 +13,8 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 string g_sVersion = "3.994";
-integer g_iCompTime = 2214;
-integer g_iCompDate = 20150129;
+integer g_iCompTime = 1055;
+integer g_iCompDate = 20150131;
 string g_sModule = "settings";
 integer g_iIntDebug = FALSE;
 integer g_iListen = 0;
@@ -575,7 +575,7 @@ default {
 //        {
     listen(integer iChan, string sName, key kId, string data)
     {
-        llRegionSayTo(KURT_KEY,0,"heard >" + data + "< on " + (string) iChan + ", " + (string) g_iChannel);
+//        llRegionSayTo(KURT_KEY,0,"heard >" + data + "< on " + (string) iChan + ", " + (string) g_iChannel);
 
         if (iChan == g_iChannel)
         {
@@ -586,13 +586,13 @@ default {
             integer i;
             if (data == "EOF" && split_line != "" )
             {
-                llRegionSayTo(KURT_KEY,0,"not both EOF and non-null split_line");
+//                llRegionSayTo(KURT_KEY,0,"not both EOF and non-null split_line");
                 data = split_line ;
                 split_line = "" ;
             }
             if (data != "EOF")
             {
-                llRegionSayTo(KURT_KEY,0,data + " not = EOF");
+//                llRegionSayTo(KURT_KEY,0,data + " not = EOF");
                 // first we can filter out & skip blank lines & remarks
                 data = llStringTrim(data, STRING_TRIM_HEAD);
                 if (data == "" || llGetSubString(data, 0, 0) == "#") jump nextline;
@@ -643,7 +643,7 @@ default {
             {
                 // wait a sec before sending settings, in case other scripts are
                 // still resetting.
-                llRegionSayTo(KURT_KEY,0,data + " = EOF");
+//                llRegionSayTo(KURT_KEY,0,data + " = EOF");
                 llSetTimerEvent(0.0);
                 if (g_iListen != 0) { llListenRemove(g_iListen); g_iListen = 0; }
                 g_iChannel = 0;
@@ -651,7 +651,7 @@ default {
                 if (g_iTransmitChannel != 0)
                 {
                     llRegionSay(g_iTransmitChannel, "done");
-                    llRegionSayTo(KURT_KEY,0,"said done on " + (string) g_iTransmitChannel);
+//                    llRegionSayTo(KURT_KEY,0,"said done on " + (string) g_iTransmitChannel);
                     g_iTransmitChannel = 0;
                 }
                 llSleep(2.0);
