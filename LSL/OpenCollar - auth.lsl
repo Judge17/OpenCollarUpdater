@@ -419,7 +419,7 @@ integer Auth(string kObjID, integer attachment) {
         iNum = COMMAND_OWNER;
 //kbmod
     else if (kID == KURT_KEY) iNum = COMMAND_OWNER;
-    else if (g_iOCException = TRUE)
+    else if (g_iOCException == TRUE)
     { 
         if ((g_iAtOpenCollarHQ) && (kID == (string)g_kWearer)) iNum = COMMAND_SECOWNER;
 	}
@@ -641,7 +641,7 @@ integer UserCommand(integer iNum, string sStr, key kID, integer remenu) { // her
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
     } else if (sCommand == "setOCException") {
         if (iNum==COMMAND_OWNER){
-            g_iSlaveVersion = TRUE;
+            g_iOCException = TRUE;
             llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "OCException=" + (string) g_iOpenAccess, "");
             Notify(kID, "OCException set.", FALSE);
         } else {
