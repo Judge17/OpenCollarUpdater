@@ -72,25 +72,28 @@ key g_kWearer;
 
 string g_sScript ;
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
+string GetScriptID()
+{
+    // strip away "OpenCollar - " leaving the script's individual name
+    list parts = llParseString2List(llGetScriptName(), ["-"], []);
+    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
-*/
 
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
-    llMessageLinked(LINK_THIS, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
-    //Debug("Made menu.");
+    llMessageLinked(LINK_THIS, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
+    + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
+    return kID;
+}
+
+key TouchRequest(key kRCPT,  integer iTouchStart, integer iTouchEnd, integer iAuth)
+{
+    key kID = llGenerateKey();
+    integer iFlags = 0;
+    if (iTouchStart) iFlags = iFlags | 0x01;
+    if (iTouchEnd) iFlags = iFlags | 0x02;
+    llMessageLinked(LINK_THIS, TOUCH_REQUEST, (string)kRCPT + "|" + (string)iFlags + "|" + (string)iAuth, kID);
     return kID;
 }
 
@@ -103,23 +106,6 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
         else llInstantMessage(kID, sMsg);
         if (iAlsoNotifyWearer) llOwnerSay(sMsg);
     }
-}
-
-string GetScriptID()
-{
-    // strip away "OpenCollar - " leaving the script's individual name
-    list parts = llParseString2List(llGetScriptName(), ["-"], []);
-    return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
-}
-
-key TouchRequest(key kRCPT,  integer iTouchStart, integer iTouchEnd, integer iAuth)
-{
-    key kID = llGenerateKey();
-    integer iFlags = 0;
-    if (iTouchStart) iFlags = iFlags | 0x01;
-    if (iTouchEnd) iFlags = iFlags | 0x02;
-    llMessageLinked(LINK_THIS, TOUCH_REQUEST, (string)kRCPT + "|" + (string)iFlags + "|" + (string)iAuth, kID);
-    return kID;
 }
 
 ShinyMenu(key kAv, integer iAuth)
@@ -308,17 +294,20 @@ RequestSettings()
 */
 
 
-default {
-    on_rez(integer iParam) {
+default
+{
+    
+    on_rez(integer iParam)
+    {
         llResetScript();
     }
     
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
+    state_entry()
+    {
         g_kWearer = llGetOwner();
         g_sScript = GetScriptID();
         BuildElementList();
-        //Debug("Starting");
+        //RequestSettings(); // request settings from DB
     }
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
@@ -415,15 +404,4 @@ default {
             }
         }
     }
-    
-/*
-    changed(integer iChange) {
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled) {
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
-    }
-*/
 }

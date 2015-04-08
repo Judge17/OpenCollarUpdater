@@ -14,7 +14,7 @@
 
 //201410060330
 
-integer g_iRLVOn = FALSE;//set to TRUE if DB says user has turned RLV features on
+integer g_iRLVOn = TRUE;//set to TRUE if DB says user has turned RLV features on
 integer g_iViewerCheck = FALSE;//set to TRUE if viewer is has responded to @versionnum message
 integer g_iRlvActive = FALSE;
 
@@ -44,7 +44,7 @@ integer COMMAND_RLV_RELAY = 507;
 integer COMMAND_SAFEWORD = 510;
 integer COMMAND_RELAY_SAFEWORD = 511;
 
-//integer POPUP_HELP = 1001;
+integer POPUP_HELP = 1001;
 
 integer LM_SETTING_SAVE = 2000;//scripts send messages on this channel to have settings saved to httpdb
 //str must be in form of "token=value"
@@ -99,6 +99,7 @@ Debug(string sStr) {
     //if you delete the first // from the preceeding and following  lines,
     //  profiling is off, debug is off, and the compiler will remind you to 
     //  remove the debug calls from the code, we're back to production mode
+    //llSleep(0.1);
     if (!g_iProfiled){
         g_iProfiled=1;
         llScriptProfiler(1);
@@ -118,20 +119,14 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer){
 
 DoMenu(key kID, integer iAuth){
     list lButtons;
-    if (g_iRLVOn)
-    {
-        lButtons += [TURNOFF];
-        if (g_iViewerCheck) lButtons += [CLEAR] + llListSort(g_lMenu, 1, TRUE);
-    }
+    if (g_iRLVOn) lButtons += [TURNOFF, CLEAR] + llListSort(g_lMenu, 1, TRUE);
     else lButtons += [TURNON];
 
     string sPrompt = "\nRestrained Love Viewer Options\n";
     if (g_iRlvVersion) sPrompt += "Detected Version of RLV: "+g_sRlvVersionString;
     if (g_iRlvaVersion) sPrompt += " (RLVa: "+g_sRlvaVersionString+")";
-    if (!g_iViewerCheck) sPrompt += "Could not detect Restrained Love Viewer.\nRestrained Love functions disabled.";
     sPrompt +="\n\nwww.opencollar.at/rlv";
     llMessageLinked(LINK_SET, DIALOG, (string)kID + "|" + sPrompt + "|0|" + llDumpList2String(lButtons, "`") + "|" + UPMENU + "|" + (string)iAuth, kMenuID = llGenerateKey());
-    //Debug("Made menu.");
 } 
 
 rebakeSourceRestrictions(key kSource){
@@ -355,6 +350,26 @@ ApplyRem(string sBehav) {
             if (llListFindList(lSrcRestr, [sBehav])!=-1) return; //check it for this restriction
         }
         
+//        //also check the exceptions list, in case its an exception
+        list lParts=llParseString2List(sBehav,[":"],[]);
+        key exceptee=llList2Key(lParts,1);
+        if (exceptee) {
+            integer exceptionIndex=llListFindList(g_lExceptions,[exceptee]);
+            if (~exceptionIndex){
+                //Debug("This exceptee has exceptions");
+                list lExceptions=llParseString2List(llList2String(g_lExceptions,exceptionIndex+1),["§"],[]);
+                string exception=llList2String(lParts,0);
+                if (~llListFindList(lExceptions,[exception])){
+                    //Debug("we found this exception for this person set by rlvex, so don't release it");
+                    return;
+                }
+            //} else {
+                //Debug("Exceptions list is "+llDumpList2String(g_lExceptions,",")+"\n checking for "+exception+" from "+(string)exceptee);
+            }
+        //} else {
+            //Debug((string)exceptee+" is not a key, so this is not an exception");
+        }
+                
         g_lBaked=llDeleteSubList(g_lBaked,iRestr,iRestr); //delete it from the baked list
         llOwnerSay("@"+sBehav+"=y"); //remove restriction
     //} else {
@@ -428,27 +443,6 @@ UserCommand(integer iNum, string sStr, key kID) {
 
 
 default {
-    on_rez(integer param) {
-/*        
-        if (g_iProfiled){
-            llScriptProfiler(1);
-            Debug("profiling restarted");
-        }
-*/        
-        g_iRlvActive=FALSE;
-        g_iViewerCheck=FALSE;
-        g_iRLVOn=FALSE;
-        g_lBaked=[];    //just been rezzed, so should have no baked restrictions
-    }
-    
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
-        llOwnerSay("@clear");
-        g_kWearer = llGetOwner();
-        WEARERNAME = llKey2Name(g_kWearer);  //quick and dirty default, will get replaced by value from settings
-        //Debug("Starting");
-    }
-
     listen(integer iChan, string sName, key kID, string sMsg) {
     //RestrainedLove viewer v2.8.0 (RLVa 1.4.10) <-- @versionnew response structure v1.23 (implemented April 2010).
     //lines commented out are from @versionnum response string (implemented late 2009)
@@ -480,13 +474,33 @@ default {
         //Debug("g_iRlvVersion: "+(string)g_iRlvVersion+" g_sRlvVersionString: "+g_sRlvVersionString+ " g_sRlvaVersionString: "+g_sRlvaVersionString+ " g_iRlvaVersion: "+(string)g_iRlvaVersion);
         //Debug("|"+sMsg+"|");
         setRlvState();
-        //Debug("Starting");
     } //Firestorm - viewer response: RestrainedLove viewer v2.8.0 (RLVa 1.4.10)
       //Firestorm - rlvmain parsed result: g_iRlvVersion: 208 (same as before) g_sRlvVersionString: 2.8.0 (same as before) g_sRlvaVersionString: 1.4.10 (new) g_iRlvaVersion: 104 (new)
       //
       //Marine's RLV Viewer - viewer response: RestrainedLove viewer v2.09.01.0 (3.7.9.32089)
       //Marine's RLV Viewer - rlvmain parsed result: g_iRlvVersion: 209 (same as before) g_sRlvVersionString: 2.09.01.0 (same as before) g_sRlvaVersionString: NULL (new) g_iRlvaVersion: 0 (new)
 
+    state_entry() {
+        //Debug("Starting");
+        setRlvState();
+        llOwnerSay("@clear");
+        g_kWearer = llGetOwner();
+        WEARERNAME = llGetDisplayName(g_kWearer);
+        if (WEARERNAME == "???" || WEARERNAME == "") WEARERNAME == llKey2Name(g_kWearer);
+    }
+
+    on_rez(integer param){
+/*        
+        if (g_iProfiled){
+            llScriptProfiler(1);
+            Debug("profiling restarted");
+        }
+*/        
+        g_iRlvActive=FALSE;
+        g_iViewerCheck=FALSE;
+        g_iRLVOn=FALSE;
+        g_lBaked=[];    //just been rezzed, so should have no baked restrictions
+    }
     link_message(integer iSender, integer iNum, string sStr, key kID) {
         if (iNum == MENUNAME_REQUEST && sStr == g_sParentMenu) {
             llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, "");
@@ -527,6 +541,7 @@ default {
             if(sToken == "auth_owner" && llStringLength(sValue) > 0) g_lOwners = llParseString2List(sValue, [","], []);
             else if (sToken=="Global_lock") g_iCollarLocked=(integer)sValue;
             else if (sToken=="Global_CType") CTYPE=sValue;
+            else if (sToken=="Global_WearerName") WEARERNAME=sValue;
         } else if (iNum == LM_SETTING_RESPONSE) {
             list lParams = llParseString2List(sStr, ["="], []);
             string sToken = llList2String(lParams, 0);
@@ -650,7 +665,7 @@ default {
     timer() {
         if (g_iCheckCount++ <= g_iMaxViewerChecks) {   //no response in timeout period, try again
             llOwnerSay("@versionnew=293847");
-            if (g_iCheckCount==3) llOwnerSay("If your viewer doesn't support RLV, you can stop the \"@versioncheck\" message by switching RLV off in your "+CTYPE+"'s RLV menu.");
+            if (g_iCheckCount>1) llMessageLinked(LINK_SET, POPUP_HELP, "\n\nIf your viewer doesn't support RLV, you can stop the \"@versionnew\" message by switching RLV off in your "+CTYPE+"'s RLV menu or by typing: _PREFIX_rlvoff\n", g_kWearer);
         } else {    //we've waited long enough, and are out of retries
             llSetTimerEvent(0.0);
             llListenRemove(g_iListener);  
@@ -658,8 +673,6 @@ default {
             //llSetTimerEvent(0.0);
             
             g_iViewerCheck = FALSE;
-            g_iRlvVersion = FALSE;
-            g_iRlvaVersion = FALSE;
             setRlvState();
 
             llOwnerSay("Could not detect Restrained Love Viewer.  Restrained Love functions disabled.");
@@ -691,14 +704,6 @@ default {
             }
 
         }
-        if (change & CHANGED_INVENTORY) { //A script may have been recompiled or added, lets refresh the RLV state for other scripts
-            if (g_iRlvActive==TRUE) {
-                llSleep(2);
-                llMessageLinked(LINK_SET, RLV_ON, "", NULL_KEY);
-                if (g_iRlvaVersion) llMessageLinked(LINK_SET, RLVA_VERSION, (string) g_iRlvaVersion, NULL_KEY);
-            }
-        }
-    }
 /*        
         if (change & CHANGED_REGION) {
             if (g_iProfiled){
@@ -707,4 +712,12 @@ default {
             }
         }
 */        
+        if (change & CHANGED_INVENTORY) { //A script may have been recompiled or added, lets refresh the RLV state for other scripts
+            if (g_iRlvActive==TRUE) {
+                llSleep(2);
+                llMessageLinked(LINK_SET, RLV_ON, "", NULL_KEY);
+                if (g_iRlvaVersion) llMessageLinked(LINK_SET, RLVA_VERSION, (string) g_iRlvaVersion, NULL_KEY);
+            }
+        }
+    }
 }

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------------ //
 //                            OpenCollar - rlvfolders                             //
-//                                 version 3.989                                  //
+//                                 version 3.990                                  //
 // ------------------------------------------------------------------------------ //
 // Licensed under the GPLv2 with additional requirements specific to Second Life® //
 // and other virtual metaverse environments.  ->  www.opencollar.at/license.html  //
@@ -107,26 +107,9 @@ string g_sScript;
 
 list g_lHistory;
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
-}
-*/
-
-key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
+Debug(string sMsg)
 {
-    key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
-    //Debug("Made menu.");
-    return kID;
+    //llOwnerSay(llGetScriptName() + ": " + sMsg);
 }
 
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
@@ -155,6 +138,14 @@ ParentFolder() {
         for (i=1;i<llGetListLength(lFolders)-1;i++) g_sCurrentFolder+="/"+llList2String(lFolders,i);
     }
     else g_sCurrentFolder="";
+}
+
+key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
+{
+    key kID = llGenerateKey();
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
+        + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
+    return kID;
 }
 
 QueryFolders(string sType)
@@ -518,7 +509,7 @@ integer UserCommand(integer iNum, string sStr, key kID)
         llOwnerSay("Searching folder containing string \"" + sPattern + "\" for browsing.");
         searchSingle(sPattern);
     }
-    else if (sStr=="save")
+    else if (sStr=="save" /*|| sStr=="menu Save"*/)
     {
         g_sCurrentFolder = "";
         g_lOutfit=[];
@@ -555,16 +546,17 @@ integer UserCommand(integer iNum, string sStr, key kID)
     return TRUE;
 }
 
-default {
-    on_rez(integer iParam) {
-        llResetScript();
-    }
-    
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
-        g_sScript = "rlvfolders_";
+default
+{
+    state_entry()
+    {
+        g_sScript = llStringTrim(llList2String(llParseString2List(llGetScriptName(), ["-"], []), 1), STRING_TRIM) + "_";
         g_kWearer = llGetOwner();
-        //Debug("Starting");
+        //integer i;
+        //for (i=0;i < llGetListLength(g_lChildren);i++)
+        //{
+        //    llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + llList2String(g_lChildren,i), "");
+        //}
     }
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
@@ -912,14 +904,8 @@ default {
         llSetTimerEvent(0.0);
     }
 
-/*
-    changed(integer iChange) {
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled) {
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
+    on_rez(integer iParam)
+    {
+        llResetScript();
     }
-*/
 }

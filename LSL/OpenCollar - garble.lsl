@@ -48,11 +48,13 @@ integer RLV_CLEAR = 6002;//RLV plugins should clear their restriction lists upon
 string g_sParentMenu = "Apps";
 string GARBLE = "☐ Garble";
 string UNGARBLE = "☒ Garble";
+integer g_nDebugMode=FALSE; // set to TRUE to enable Debug messages
 
 string WEARERNAME;
 
 string SAFE = "RED";
-key g_kWearer;
+key gkWear;
+string gsWear;
 string gsPref;
 string gsFir;
 integer giCRC;
@@ -61,23 +63,15 @@ integer bOn;
 integer g_iBinder;
 key g_kBinder;
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
+Debug(string _m)
+{
+    if (!g_nDebugMode) return;
+    llOwnerSay(llGetScriptName() + ": " + _m);
 }
-*/
 
 Notify(key _k, string _m, integer NotifyWearer)
 {
-    if (_k == g_kWearer) llOwnerSay(_m);
+    if (_k == gkWear) llOwnerSay(_m);
     else
     {
         if (llGetAgentSize(_k)) llRegionSayTo(_k, 0, _m);
@@ -92,27 +86,23 @@ string GetScriptID()
     list parts = llParseString2List(llGetScriptName(), ["-"], []);
     return llStringTrim(llList2String(parts, 1), STRING_TRIM) + "_";
 }
-
 string PeelToken(string in, integer slot)
 {
     integer i = llSubStringIndex(in, "_");
     if (!slot) return llGetSubString(in, 0, i);
     return llGetSubString(in, i + 1, -1);
 }
-
 SetPrefix(string in)
 {
     if (in != "auto") gsPref = in;
     else
     {
-        string sName = llKey2Name(g_kWearer);
-        integer i = llSubStringIndex(sName, " ") + 1;
-        string init = llGetSubString(sName, 0, 0) + llGetSubString(sName, i, i);
+        integer i = llSubStringIndex(gsWear, " ") + 1;
+        string init = llGetSubString(gsWear, 0, 0) + llGetSubString(gsWear, i, i);
         gsPref = llToLower(init);
     }
-    //Debug("Prefix set to: " + gsPref);
+    Debug("Prefix set to: " + gsPref);
 }
-
 string garble(string _i)
 {
     // return punctuations unharmed
@@ -139,12 +129,12 @@ bind(key _k, integer auth)
     llMessageLinked(LINK_SET, MENUNAME_REMOVE, g_sParentMenu + "|" + GARBLE, "");
     llMessageLinked(LINK_SET, LM_SETTING_SAVE, GetScriptID() + "Binder=" + (string)_k + "," + (string)auth, "");
     // Garbler only listen to the wearer, as a failsafe
-    giGL = llListen(giCRC, "", g_kWearer, "");
+    giGL = llListen(giCRC, "", gkWear, "");
     llMessageLinked(LINK_SET, RLV_CMD, "redirchat:" + (string)giCRC + "=add,chatshout=n,sendim=n", NULL_KEY);
     if (llGetAgentSize(_k) != ZERO_VECTOR)
     {
-        if (_k != g_kWearer) llOwnerSay(llKey2Name(_k) + " ordered you to be quiet");
-        Notify(_k, WEARERNAME + "'s speech is now garbled", FALSE);
+        if (_k != gkWear) llOwnerSay(llKey2Name(_k) + " ordered you to be quiet");
+        Notify(_k, gsWear + "'s speech is now garbled", FALSE);
     }
     llMessageLinked(LINK_THIS, auth, "menu "+g_sParentMenu, _k);
 }
@@ -160,8 +150,8 @@ release(key _k ,integer auth)
     llMessageLinked(LINK_SET, RLV_CMD, "chatshout=y,sendim=y,redirchat:" + (string)giCRC + "=rem", NULL_KEY);
     if (llGetAgentSize(_k) != ZERO_VECTOR)
     {
-        if (_k != g_kWearer) llOwnerSay("You are free to speak again");
-        Notify(_k, WEARERNAME + " is allowed to talk again", FALSE);
+        if (_k != gkWear) llOwnerSay("You are free to speak again");
+        Notify(_k, gsWear + " is allowed to talk again", FALSE);
     }
     llMessageLinked(LINK_THIS, auth, "menu "+g_sParentMenu, _k);
 }
@@ -188,30 +178,33 @@ integer UserCommand(integer iNum, string sStr, key kID)
     return TRUE;
 }
 
-default {
-    on_rez(integer _r) {
-        if (llGetOwner() != g_kWearer) llResetScript();
+default
+{
+    on_rez(integer _r)
+    {
+        if (llGetOwner() != gkWear) llResetScript();
     }
-    
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
-        g_kWearer = llGetOwner();
-        WEARERNAME = llKey2Name(g_kWearer);  //quick and dirty default, will get replaced by value from settings
+    state_entry()
+    {
+        gkWear = llGetOwner();
+        WEARERNAME = llGetDisplayName(gkWear);
+        if (WEARERNAME == "???" || WEARERNAME == "") WEARERNAME == llKey2Name(gkWear);
+        gsWear = WEARERNAME;
         
         giCRC = llRound(llFrand(499) + 1);
-        if (bOn) release(g_kWearer,0);
+        if (bOn) release(gkWear,0);
         llMessageLinked(LINK_THIS, LM_SETTING_REQUEST, "listener_safeword", "");
         llMessageLinked(LINK_THIS, LM_SETTING_REQUEST, GetScriptID() + "Binder", "");
-        //Debug("Starting");
+        //llSleep(1.0);
     }
     listen(integer _c, string _n, key _k, string _m)
     {
         if (_c == giCRC)
         {
-            if (_k == g_kWearer)
+            if (_k == gkWear)
             {
                 string sw = _m;
-                integer i = llStringLength(WEARERNAME);
+                integer i = llStringLength(gsWear);
                 if (llGetSubString(sw, 0, 1) == "((" && llGetSubString(sw, -2, -1) == "))")
                     sw = llGetSubString(sw, 2, -3);
                 if (llSubStringIndex(sw, gsPref) == 0)
@@ -233,7 +226,7 @@ default {
                 sOut += garble(llToLower(llGetSubString(_m, iL, iL)));
             string sMe = llGetObjectName();
             llSetObjectName("");
-            llWhisper(0, "/me " +WEARERNAME+" mumbles: " + sOut);
+            llWhisper(0, "/me " +gsWear+" mumbles: " + sOut);
             llSetObjectName(sMe);
             return;
         }
@@ -252,6 +245,21 @@ default {
             else llMessageLinked(LINK_SET, RLV_CMD, "chatshout=y,sendim=y,redirchat:" + (string)giCRC + "=rem", NULL_KEY);
         }
         else if (iM == RLV_CLEAR) release(kM,iL);
+        else if ((iM == LM_SETTING_RESPONSE || iM == LM_SETTING_DELETE) 
+                && llSubStringIndex(sM, "Global_WearerName") == 0 ) {
+            integer iInd = llSubStringIndex(sM, "=");
+            string sValue = llGetSubString(sM, iInd + 1, -1);
+            //We have a broadcasted change to WEARERNAME to work with
+            if (iM == LM_SETTING_RESPONSE) {
+                WEARERNAME = sValue;
+                gsWear = WEARERNAME;
+            }
+            else {
+                WEARERNAME = llGetDisplayName(llGetOwner());
+                if (WEARERNAME == "???" || WEARERNAME == "") WEARERNAME == llKey2Name(llGetOwner());
+                gsWear = WEARERNAME;
+            }
+        }
         else if (iM == LM_SETTING_RESPONSE)
         {
             list lP = llParseString2List(sM, ["="], []);
@@ -269,7 +277,7 @@ default {
             {
                 if (sV == "") sV = "auto";
                 SetPrefix(sV);
-            } else if (sT=="Global_WearerName") WEARERNAME=sV;
+            }
         }
         else if (iM == LM_SETTING_EMPTY && sM == GetScriptID() + "Binder") release(kM,iL);
         else if (iM == LM_SETTING_SAVE) // Have to update the safeword if it is changed between resets
@@ -286,15 +294,4 @@ default {
         }
         if (iM == COMMAND_SAFEWORD) release(kM,iL);
     }
-    
-/*
-    changed(integer iChange) {
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled) {
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
-    }
-*/
 }

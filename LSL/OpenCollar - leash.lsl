@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------------ //
 //                              OpenCollar - leash                                //
-//                                 version 3.995                                  //
+//                                 version 3.996                                  //
 // ------------------------------------------------------------------------------ //
 // Licensed under the GPLv2 with additional requirements specific to Second Life® //
 // and other virtual metaverse environments.  ->  www.opencollar.at/license.html  //
@@ -15,9 +15,9 @@
 // Oct. 18, 2008
 // Nandana Singh, Lulu Pink, Garvin Twine, Joy Stipe
 
-string g_sVersion = "3.995";
-integer g_iCompTime = 2106;
-integer g_iCompDate = 20150214ß;
+string g_sVersion = "3.996";
+integer g_iCompTime = 1936;
+integer g_iCompDate = 20150223;
 string g_sModule = "leash";
 integer g_iIntDebug = FALSE;
 
@@ -158,12 +158,12 @@ Debug(string sStr) {
 }
 */
 
-    key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth){
-        key kID = llGenerateKey();
-        llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
-        //Debug("Made menu.");
-        return kID;
-    }
+key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth){
+    key kID = llGenerateKey();
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
+    //Debug("Made menu.");
+    return kID;
+}
 
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer){
     if (kID == g_kWearer) llOwnerSay(sMsg);
@@ -270,27 +270,27 @@ integer LeashTo(key kTarget, key kCmdGiver, integer iAuth, list lPoints, integer
             if (iFollowMode){
                 sWearMess = "You begin following " + sTarget + ".";
             } else {
-                    //sCmdMess = ""; // Only one message will need to be sent
-                    sWearMess = "You take your leash";
+                //sCmdMess = ""; // Only one message will need to be sent
+                sWearMess = "You take your leash";
                 if (bTargetIsAvi) { // leashing self to someone else
                     sWearMess += ", and hand it to " + sTarget + ".";
                 } else { // leashing self to an object
-                        sWearMess += ", and tie it to " + sTarget + ".";
+                    sWearMess += ", and tie it to " + sTarget + ".";
                 }
             }
         } else {// Leasher is not Wearer
-                string sCmdMess;
+            string sCmdMess;
             if (iFollowMode){
                 if (kCmdGiver != kTarget) { // LeashTo someone else
                     Notify(kTarget, sCmdGiver + " commands " + WEARERNAME + " to follow you.", FALSE);
                     sCmdMess= "You command " + WEARERNAME + " to follow " + sTarget + ".";
                     sWearMess = sCmdGiver + " commands you to follow " + sTarget + ".";
                 } else {
-                        sCmdMess= "You command " + WEARERNAME + " to follow you.";
+                    sCmdMess= "You command " + WEARERNAME + " to follow you.";
                     sWearMess = sCmdGiver + " commands you to follow them.";
                 }
             } else {
-                    string sPsv = "'s"; // Possessive, will vary if name ends in "s"
+                string sPsv = "'s"; // Possessive, will vary if name ends in "s"
                 if (llGetSubString(WEARERNAME, -1,-1)=="s") sPsv = "'";
                 sCmdMess= "You grab " + WEARERNAME + sPsv + " leash";
                 sWearMess = sCmdGiver + " grabs your leash";
@@ -300,7 +300,7 @@ integer LeashTo(key kTarget, key kCmdGiver, integer iAuth, list lPoints, integer
                         sWearMess += ", and hands it to " + sTarget + ".";
                         Notify(kTarget, sCmdGiver + " hands you " + WEARERNAME + sPsv + " leash.", FALSE);
                     } else {// LeashTo object
-                            sCmdMess += ", and tie it to " + sTarget + ".";
+                        sCmdMess += ", and tie it to " + sTarget + ".";
                         sWearMess += ", and ties it to " + sTarget + ".";
                     }
                 }
@@ -323,7 +323,7 @@ integer LeashTo(key kTarget, key kCmdGiver, integer iAuth, list lPoints, integer
         if (iFollowMode){
             llMessageLinked(LINK_SET, POPUP_HELP, WEARERNAME + " has been commanded to follow you.  Say \"_PREFIX_unfollow\" to relase them.", g_kLeashedTo);
         } else {
-                llMessageLinked(LINK_SET, POPUP_HELP, WEARERNAME + " has been leashed to you.  Say \"_PREFIX_unleash\" to unleash them.  Say \"_PREFIX_giveholder\" to get a leash holder.", g_kLeashedTo);
+            llMessageLinked(LINK_SET, POPUP_HELP, WEARERNAME + " has been leashed to you.  Say \"_PREFIX_unleash\" to unleash them.  Say \"_PREFIX_giveholder\" to get a leash holder.", g_kLeashedTo);
         }
     }
     return TRUE;
@@ -336,7 +336,7 @@ DoLeash(key kTarget, integer iAuth, list lPoints){
     if (g_bFollowMode) {
         llMessageLinked(LINK_THIS, COMMAND_PARTICLE, "unleash", g_kLeashedTo);
     } else {
-            integer iPointCount = llGetListLength(lPoints);
+        integer iPointCount = llGetListLength(lPoints);
         g_sCheck = "";
         if (iPointCount) {//if more than one leashpoint, listen for all strings, else listen just for that point
             if (iPointCount == 1) g_sCheck = (string)llGetOwnerKey(kTarget) + llList2String(lPoints, 0) + " ok";
@@ -385,38 +385,38 @@ Unleash(key kCmdGiver)
                     sWearMess = "You stop following " + sTarget + ".";
                     sTargetMess = WEARERNAME + " stops following you.";
                 } else {
-                        sWearMess = "You unleash yourself from " + sTarget + "."; // sTarget might be an object
+                    sWearMess = "You unleash yourself from " + sTarget + "."; // sTarget might be an object
                     sTargetMess = WEARERNAME + " unleashes from you.";
                 }
                 if (g_bLeashedToAvi) Notify(g_kLeashedTo, sTargetMess, FALSE);
             } else { // Unleasher is not Wearer
-                    if (kCmdGiver == g_kLeashedTo) {
-                        if (g_bFollowMode) {
-                            sCmdMess= "You release " + WEARERNAME + " from following you.";
-                            sWearMess = sCmdGiver + " releases you from following.";
-                        } else {
-                                sCmdMess= "You unleash " + WEARERNAME + ".";
-                            sWearMess = sCmdGiver + " unleashes you.";
-                        }
+                if (kCmdGiver == g_kLeashedTo) {
+                    if (g_bFollowMode) {
+                        sCmdMess= "You release " + WEARERNAME + " from following you.";
+                        sWearMess = sCmdGiver + " releases you from following.";
                     } else {
-                            if (g_bFollowMode) {
-                                sCmdMess= "You release " + WEARERNAME + " from following " + sTarget + ".";
-                                sWearMess = sCmdGiver + " releases you from following " + sTarget + ".";
-                                sTargetMess = WEARERNAME + " stops following you.";
-                            } else {
-                                    sCmdMess= "You unleash  " + WEARERNAME + " from " + sTarget + ".";
-                                sWearMess = sCmdGiver + " unleashes you from " + sTarget + ".";
-                                sTargetMess = sCmdGiver + " unleashes " + WEARERNAME + " from you.";
-                            }
-                        if (g_bLeashedToAvi) Notify(g_kLeashedTo, sTargetMess, FALSE);
+                        sCmdMess= "You unleash " + WEARERNAME + ".";
+                        sWearMess = sCmdGiver + " unleashes you.";
                     }
+                } else {
+                    if (g_bFollowMode) {
+                        sCmdMess= "You release " + WEARERNAME + " from following " + sTarget + ".";
+                        sWearMess = sCmdGiver + " releases you from following " + sTarget + ".";
+                        sTargetMess = WEARERNAME + " stops following you.";
+                    } else {
+                        sCmdMess= "You unleash  " + WEARERNAME + " from " + sTarget + ".";
+                        sWearMess = sCmdGiver + " unleashes you from " + sTarget + ".";
+                        sTargetMess = sCmdGiver + " unleashes " + WEARERNAME + " from you.";
+                    }
+                    if (g_bLeashedToAvi) Notify(g_kLeashedTo, sTargetMess, FALSE);
+                }
                 Notify(kCmdGiver, sCmdMess, FALSE);
             }
             llOwnerSay(sWearMess);
         }
         DoUnleash();
     } else {
-            Notify(kCmdGiver, WEARERNAME+" is not leashed", FALSE);
+        Notify(kCmdGiver, WEARERNAME+" is not leashed", FALSE);
     }
 }
 

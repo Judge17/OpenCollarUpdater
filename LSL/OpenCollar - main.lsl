@@ -18,9 +18,9 @@
 //on listen, send submenu link message
 
 integer g_iLatestVersion=TRUE;
-string g_sCollarVersion = "3.994";
-integer g_iCompTime = 1115;
-integer g_iCompDate = 20141224;
+string g_sCollarVersion = "3.996";
+integer g_iCompTime = 1959;
+integer g_iCompDate = 20150223;
 string g_sModule = "main";
 integer g_iIntDebug = FALSE;
 integer g_iAtOpenCollarHQ = FALSE;

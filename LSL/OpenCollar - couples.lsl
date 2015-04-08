@@ -3,10 +3,10 @@
 //                             OpenCollar - couples                               //
 //                                 version 3.990                                  //
 // ------------------------------------------------------------------------------ //
-// Licensed under the GPLv2 with additional requirements specific to Second Life® //
+// Licensed under the GPLv2 with additional requirements specific to Second Life¬Æ //
 // and other virtual metaverse environments.  ->  www.opencollar.at/license.html  //
 // ------------------------------------------------------------------------------ //
-// ©   2008 - 2014  Individual Contributors and OpenCollar - submission set free™ //
+// ¬©   2008 - 2014  Individual Contributors and OpenCollar - submission set free‚Ñ¢ //
 // ------------------------------------------------------------------------------ //
 //                    github.com/OpenCollar/OpenCollarUpdater                     //
 // ------------------------------------------------------------------------------ //
@@ -107,38 +107,7 @@ string g_sStopString = "stop";
 integer g_iStopChan = 99;
 integer g_iListener;    //stop listener handle
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
-}
-*/
-
-key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
-{
-    key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
-    //Debug("Made menu.");
-    return kID;
-} 
-
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
-{
-    if (kID == g_kWearer) llOwnerSay(sMsg);
-    else
-    {
-        if (llGetAgentSize(kID)) llRegionSayTo(kID,0,sMsg);
-        else llInstantMessage(kID, sMsg);
-        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
-    }
-}
+//Debug(string sStr){ llOwnerSay(llGetScriptName() + ": " + sStr);}
 
 refreshTimer(){
     integer timeNow=llGetUnixTime();
@@ -159,6 +128,14 @@ refreshTimer(){
     }
     llSetTimerEvent(nextTimeout-timeNow);
 }
+
+key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
+{
+    key kID = llGenerateKey();
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
+    + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
+    return kID;
+} 
 
 CoupleAnimMenu(key kID, integer iAuth)
 {
@@ -207,6 +184,17 @@ StopAnims()
     g_sDomAnim = "";
 }
 
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer) llOwnerSay(sMsg);
+    else
+    {
+        if (llGetAgentSize(kID)) llRegionSayTo(kID,0,sMsg);
+        else llInstantMessage(kID, sMsg);
+        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
+    }
+}
+
 // Calmly walk up to your partner and face them. Does not position the avatar precicely
 MoveToPartner() {
     list partnerDetails = llGetObjectDetails(g_kPartner, [OBJECT_POS, OBJECT_ROT]);
@@ -221,39 +209,10 @@ MoveToPartner() {
     llMoveToTarget(partnerPos, g_fWalkingTau);
 }
 
-default {
-    on_rez(integer start) {
-        //added to stop anims after relog when you logged off while in an endless couple anim
-        if (g_sSubAnim != "" && g_sDomAnim != "") {
-             llSleep(1.0);  // wait a second to make sure the poses script reseted properly
-             StopAnims();
-        }
-        llResetScript();
-    }
-    
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
-        g_sScript = "coupleanim_";
-        g_kWearer = llGetOwner();
-        WEARERNAME = llKey2Name(g_kWearer);  //quick and dirty default, will get replaced by value from settings
-        if (llGetInventoryType(CARD1) == INVENTORY_NOTECARD) {  //card is present, start reading
-            g_kCardID1 = llGetInventoryKey(CARD1);
-            g_iLine1 = 0;
-            g_lAnimCmds = [];
-            g_lAnimSettings = [];
-            g_kDataID1 = llGetNotecardLine(CARD1, g_iLine1);
-        }
-        if (llGetInventoryType(CARD2) == INVENTORY_NOTECARD) {  //card is present, start reading
-            g_kCardID2 = llGetInventoryKey(CARD2);
-            g_iLine2 = 0;
-            g_kDataID2 = llGetNotecardLine(CARD2, g_iLine2);
-        }
-        
-        llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, "");
-        //Debug("Starting");
-    }
-    
-    listen(integer channel, string sName, key kID, string sMessage) {
+default
+{
+    listen(integer channel, string sName, key kID, string sMessage)
+    {
         //Debug("listen: " + sMessage + ", channel=" + (string)channel);
         llListenRemove(g_iListener);
         if (channel == g_iStopChan)
@@ -262,7 +221,42 @@ default {
             llMessageLinked(LINK_SET, COMMAND_GROUP, "stopcouples", kID);
         }
     }
-    
+    state_entry()
+    {
+        //llOwnerSay("Coupleanim1, default state_entry: "+(string)llGetFreeMemory());
+        g_sScript = "coupleanim_";
+        g_kWearer = llGetOwner();
+        WEARERNAME = llGetDisplayName(g_kWearer);
+        if (WEARERNAME == "???" || WEARERNAME == "") WEARERNAME = llKey2Name(g_kWearer); //sanity check, fallback if necessary
+        if (llGetInventoryType(CARD1) == INVENTORY_NOTECARD)
+        {//card is present, start reading
+            g_kCardID1 = llGetInventoryKey(CARD1);
+            g_iLine1 = 0;
+            g_lAnimCmds = [];
+            g_lAnimSettings = [];
+            g_kDataID1 = llGetNotecardLine(CARD1, g_iLine1);
+        }
+        if (llGetInventoryType(CARD2) == INVENTORY_NOTECARD)
+        {//card is present, start reading
+            g_kCardID2 = llGetInventoryKey(CARD2);
+            g_iLine2 = 0;
+            g_kDataID2 = llGetNotecardLine(CARD2, g_iLine2);
+        }
+        
+        llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, "");
+    }
+    on_rez(integer start)
+    {
+
+        //added to stop anims after relog when you logged off while in an endless couple anim
+        if (g_sSubAnim != "" && g_sDomAnim != "")
+        {
+             // wait a second to make sure the poses script reseted properly
+             llSleep(1.0);
+             StopAnims();
+        }
+        llResetScript();
+    }
     link_message(integer iSender, integer iNum, string sStr, key kID)
     {
         //if you don't care who gave the command, so long as they're one of the above, you can just do this instead:
@@ -318,6 +312,18 @@ default {
         {
             llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, "");
         }
+        else if ((iNum == LM_SETTING_RESPONSE || iNum == LM_SETTING_DELETE) 
+                && llSubStringIndex(sStr, "Global_WearerName") == 0 ) {
+            integer iInd = llSubStringIndex(sStr, "=");
+            string sValue = llGetSubString(sStr, iInd + 1, -1);
+            //We have a broadcasted change to WEARERNAME to work with
+            if (iNum == LM_SETTING_RESPONSE) WEARERNAME = sValue;
+            else {
+                g_kWearer = llGetOwner();
+                WEARERNAME = llGetDisplayName(g_kWearer);
+                if (WEARERNAME == "???" || WEARERNAME == "") WEARERNAME == llKey2Name(g_kWearer);
+            }
+        }
         else if (iNum == LM_SETTING_RESPONSE)
         {
             list lParams = llParseString2List(sStr, ["="], []);
@@ -326,7 +332,7 @@ default {
             if(sToken == g_sScript + "timeout")
             {
                 g_fTimeOut = (float)sValue;
-            } else if (sToken=="Global_WearerName") WEARERNAME=sValue;
+            }
         }
         else if (iNum == DIALOG_RESPONSE)
         {
@@ -384,7 +390,7 @@ default {
                     //process return from sensordialog
                     g_kPartner = (key)sMessage;
                     g_sPartnerName = llGetDisplayName(g_kPartner);
-                    if (g_sPartnerName == "???" || g_sPartnerName == "") g_sPartnerName = llKey2Name(g_kPartner); //sanity check, fallback if necessary
+                    if (g_sPartnerName == "???" || g_sPartnerName == "") WEARERNAME = llKey2Name(g_kPartner); //sanity check, fallback if necessary
                     StopAnims();
                     string sCommand = llList2String(g_lAnimCmds, g_iCmdIndex);
                     llRequestPermissions(g_kPartner, PERMISSION_TRIGGER_ANIMATION);
@@ -521,7 +527,22 @@ default {
             }
         }
     }
-
+    changed(integer iChange)
+    {
+        if (iChange & CHANGED_INVENTORY)
+        {
+            if (llGetInventoryKey(CARD1) != g_kCardID1)
+            {
+                //because notecards get new uuids on each save, we can detect if the notecard has changed by seeing if the current uuid is the same as the one we started with
+                //just switch states instead of restarting, so we can preserve any settings we may have gotten from db
+                state default;
+            }
+            if (llGetInventoryKey(CARD2) != g_kCardID1)
+            {
+                state default;
+            }
+        }
+    }
     run_time_permissions(integer perm)
     {
         if (perm & PERMISSION_TRIGGER_ANIMATION)
@@ -538,31 +559,5 @@ default {
                 Notify(kID, "Sorry, but the request timed out.",TRUE);
             }
         }
-    }
-
-    changed(integer iChange)
-    {
-        if (iChange & CHANGED_INVENTORY)
-        {
-            if (llGetInventoryKey(CARD1) != g_kCardID1)
-            {
-                //because notecards get new uuids on each save, we can detect if the notecard has changed by seeing if the current uuid is the same as the one we started with
-                //just switch states instead of restarting, so we can preserve any settings we may have gotten from db
-                state default;
-            }
-            if (llGetInventoryKey(CARD2) != g_kCardID1)
-            {
-                state default;
-            }
-        }
-
-/*
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled) {
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
-*/
     }
 }

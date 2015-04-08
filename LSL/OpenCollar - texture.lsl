@@ -85,37 +85,9 @@ string SEPARATOR = "~";
 // TRUE will still use basic textures for a given element WHEN that element has no special textures named in the collar.
 integer EXCLUSIVE = TRUE;
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
-}
-*/
-
-key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
+Debug(string sStr)
 {
-    key kID = llGenerateKey();
-    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
-    //Debug("Made menu.");
-    return kID;
-}
-
-Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
-{
-    if (kID == g_kWearer) llOwnerSay(sMsg);
-    else
-    {
-        if (llGetAgentSize(kID)) llRegionSayTo(kID,0,sMsg);
-        else llInstantMessage(kID, sMsg);
-        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
-    }
+    //llOwnerSay(llGetScriptName() + ": " + sStr);
 }
 
 loadNotecardTextures()
@@ -241,6 +213,25 @@ list BuildTexButtons()
         if (but != "") out += [but];
     }
     return out;
+}
+
+Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
+{
+    if (kID == g_kWearer) llOwnerSay(sMsg);
+    else
+    {
+        if (llGetAgentSize(kID)) llRegionSayTo(kID,0,sMsg);
+        else llInstantMessage(kID, sMsg);
+        if (iAlsoNotifyWearer) llOwnerSay(sMsg);
+    }
+}
+
+key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
+{
+    key kID = llGenerateKey();
+    llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|"
+    + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
+    return kID;
 }
 
 key TouchRequest(key kRCPT, integer iTouchStart, integer iTouchEnd, integer iAuth)
@@ -438,9 +429,10 @@ integer UserCommand(integer iNum, string sStr, key kID)
     return TRUE ;
 }
 
-default {
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
+default
+{
+    state_entry()
+    {
         g_kWearer = llGetOwner();
         g_sScript = llStringTrim(llList2String(llParseString2List(llGetScriptName(), ["-"], []), 1), STRING_TRIM) + "_";
         loadNotecardTextures();
@@ -449,11 +441,15 @@ default {
         integer n;
         integer iLinkCount = llGetNumberOfPrims();
         //root prim is 1, so start at 2
-        for (n = 2; n <= iLinkCount; n++) {
+        for (n = 2; n <= iLinkCount; n++)
+        {
             string sElement = ElementType(n);
-            if (!(~llListFindList(g_lElements, [sElement])) && sElement != "notexture") g_lElements += [sElement];
+            if (!(~llListFindList(g_lElements, [sElement])) && sElement != "notexture")
+            {
+                g_lElements += [sElement];
+                //llSay(0, "added " + sElement + " to g_lElements");
+            }
         }
-        //Debug("Starting");
     }
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
@@ -582,6 +578,13 @@ default {
         }
     }
 
+    on_rez(integer iParam)
+    {
+        //llResetScript();
+    }
+    //Is this necessary for anything? Removing for now, we'll see.
+    //yeah it was necessary cos our menu structuring is MESSED UP and relies on all sorts of scripts resetting. This should do the trick instead, however.
+
     changed(integer change)
     {
         if(change&CHANGED_LINK) llResetScript();
@@ -590,13 +593,5 @@ default {
             if(llGetInventoryType(g_sTextureCard)==INVENTORY_NOTECARD && llGetInventoryKey(g_sTextureCard)!=g_kTextureCardUUID) loadNotecardTextures();
         }
         else if (change&CHANGED_OWNER) llResetScript();
-/*
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled) {
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
-*/
     }
 }

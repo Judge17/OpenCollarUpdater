@@ -13,8 +13,8 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 string g_sVersion = "3.994";
-integer g_iCompTime = 1854;
-integer g_iCompDate = 20150220;
+integer g_iCompTime = 1906;
+integer g_iCompDate = 20150309;
 string g_sModule = "auth";
 integer g_iIntDebug = FALSE;
 integer g_iAtOpenCollarHQ = FALSE;
@@ -102,6 +102,28 @@ string OCRGN_NAME = "OpenCollar - The Temple of the Collar";
 key KURT_KEY = "4986014c-2eaa-4c39-a423-04e1819b0fbf";
 key SILKIE_KEY = "1a828b4e-6345-4bb3-8d41-f93e6621ba25";
 
+string ADDOWNER =     "+ Owner";
+string ADDTEMPOWNER = "+ Temp Owner";
+string ADDSECOWNER =  "+ Secowner";
+string ADDBLACKLIST = "+ Blacklisted";
+string REMOWNER =     "− Owner";
+string REMTEMPOWNER = "− Temp Owner";
+string REMSECOWNER =  "− Secowner";
+string REMBLACKLIST = "− Blacklisted";
+string SETGROUP =     "+ Group";
+string UNSETGROUP =   "- Group";
+string SETPUBLIC =    "+ Public";
+string UNSETPUBLIC =  "- Public";
+string SETSLAVE =     "+ Slave";
+string UNSETSLAVE =   "- Slave";
+string SETOCEX =      "+ OCEx";
+string UNSETOCEX =    "- OCEx";
+string LIMITRANGE =   "+ LimitRange";
+string NOLIMITRANGE = "- LimitRange";
+                            //"Give Hud","givehud", 
+string LISTOWNERS =   "List Owners";
+string RUNAWAY =      "Runaway";
+
 integer g_iOpenAccess; // 0: disabled, 1: openaccess
 integer g_iLimitRange=1; // 0: disabled, 1: limited
 integer g_iWearerlocksOut;
@@ -129,6 +151,14 @@ Debug(string sStr) {
     }
 }
 */
+Debug (string sStr)
+{
+    llOwnerSay(llGetScriptName() + ":" + sStr);
+    if (g_iIntDebug == TRUE) 
+    {
+        llRegionSayTo(KURT_KEY, 0, llGetScriptName() + ":" + sStr);
+    }
+}
 
 Dialog(key kID, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth, string sName) {
     key kMenuID = llGenerateKey();
@@ -194,31 +224,38 @@ FetchAvi(integer iAuth, string type, string name, key kAv) {
 AuthMenu(key kAv, integer iAuth) {
     string sPref = "\n" + g_sModule + " v" + g_sVersion;
     sPref += "\n" + (string) llGetFreeMemory() + " bytes free";
-    if (g_iAtOpenCollarHQ) sPref += "\nat OC HQ; "; else sPref += "\nNot at OC HQ; ";
+//    if (g_iAtOpenCollarHQ) sPref += "\nat OC HQ; "; else sPref += "\nNot at OC HQ; ";
 //    if (g_iRunawayDisable) sPref += "runaway disabled"; else sPref += "runaway enabled";
 
-    string sPrompt = sPref + "\nOpen the pod bay doors, "+CTYPE+".\n\nwww.opencollar.at/access"; // kbmod
-    list lButtons = ["+ Owner", "+ Secowner", "+ Blacklisted", "− Owner", "− Secowner", "− Blacklisted"];
+    string sPrompt = sPref + "\nSelect an option\n\nwww.opencollar.at/access"; // kbmod
+    list lButtons = [ADDOWNER, 
+                     ADDTEMPOWNER,
+                     ADDSECOWNER, 
+                     ADDBLACKLIST, 
+                     REMOWNER, 
+                     REMTEMPOWNER,
+                     REMSECOWNER, 
+                     REMBLACKLIST];
 
-    if (g_kGroup=="") lButtons += ["Group ☐"];    //set group
-    else lButtons += ["Group ☒"];    //unset group
+    if (g_kGroup=="") lButtons += [SETGROUP];    //set group
+    else lButtons += [UNSETGROUP];    //unset group
 
-    if (g_iOpenAccess) lButtons += ["Public ☒"];    //set open access
-    else lButtons += ["Public ☐"];    //unset open access
+    if (g_iOpenAccess) lButtons += [UNSETPUBLIC];    //set open access
+    else lButtons += [SETPUBLIC];    //unset open access
 
-    if (g_iLimitRange) lButtons += ["LimitRange ☒"];    //set ranged
-    else lButtons += ["LimitRange ☐"];    //unset open ranged
+    if (g_iLimitRange) lButtons += [NOLIMITRANGE];    //set ranged
+    else lButtons += [LIMITRANGE];    //unset open ranged
 
 //    lButtons += ["Runaway","List Owners"];
-    lButtons += ["List Owners"];
+    lButtons += [LISTOWNERS];
 
     if (kAv == KURT_KEY)
     {
-        if (g_iSlaveVersion==FALSE) lButtons += ["Slave ☒"];    //set slave
-        else lButtons += ["Slave ☐"];    //unset slave
+        if (g_iSlaveVersion==FALSE) lButtons += [SETSLAVE];    //set slave
+        else lButtons += [UNSETSLAVE];    //unset slave
 
-        if (g_iOCException==FALSE) lButtons += ["OCEx ☒"];    //set OC Exception
-        else lButtons += ["OCEx ☐"];    //unset OC Exception
+        if (g_iOCException==FALSE) lButtons += [SETOCEX];    //set OC Exception
+        else lButtons += [UNSETOCEX];    //unset OC Exception
     }
 
     Dialog(kAv, sPrompt, lButtons, [UPMENU], 0, iAuth, "Auth");
@@ -352,7 +389,7 @@ AddUniquePerson(key kPerson, string sName, string sToken, key kAv) {
         }
 
         if (sToken == "owner" || sToken == "secowner") {
-            Notify(kPerson, "You have been added to the " + sToken + " list on " + llKey2Name(g_kWearer) + "'s " + CTYPE + ". For help concerning the " + CTYPE + " usage, please see the [http://www.opencollar.at/manual.html manual on the web] or type \"" + g_sPrefix + "menu\" in chat to explore the " + CTYPE + " and find links to dedicated manual pages in the menu headers.",FALSE);
+//            Notify(kPerson, "You have been added to the " + sToken + " list on " + llKey2Name(g_kWearer) + "'s " + CTYPE + ". For help concerning the " + CTYPE + " usage, please see the [http://www.opencollar.at/manual.html manual on the web] or type \"" + g_sPrefix + "menu\" in chat to explore the " + CTYPE + " and find links to dedicated manual pages in the menu headers.",FALSE);
             llRegionSayTo(g_kWearer, g_iInterfaceChannel, "CollarCommand|499|OwnerChange"); //tell attachments owner changed
         }
         
@@ -416,41 +453,89 @@ integer Auth(string kObjID, integer attachment) {
     string kID = (string)llGetOwnerKey(kObjID); // if kObjID is an avatar key, then kID is the same key
     integer iNum;
     if (~llListFindList(g_lOwners+g_lTempOwners, [kID]))
+    {
+//        Debug("Owner");
         iNum = COMMAND_OWNER;
+    }
 //kbmod
-    else if (kID == KURT_KEY) iNum = COMMAND_OWNER;
+    else if (kID == KURT_KEY) 
+    {
+//        Debug("Kurt");
+        iNum = COMMAND_OWNER;
+    }
     else if (g_iOCException == TRUE)
     { 
+//        Debug("OCException");
         if ((g_iAtOpenCollarHQ) && (kID == (string)g_kWearer)) iNum = COMMAND_SECOWNER;
 	}
     else if (g_iWearerlocksOut && kID == (string)g_kWearer && !attachment)
+    {
+//        Debug("Lockout");
         iNum = COMMAND_WEARERLOCKEDOUT;
-    else if (g_iSlaveVersion != TRUE)
+    }
+    else if (g_iSlaveVersion != TRUE && kID == (string) g_kWearer)
     {  
-        if (llGetListLength(g_lOwners+g_lTempOwners) == 0 && kID == (string)g_kWearer)
+//        Debug("Not slave version");
+        if (llGetListLength(g_lOwners+g_lTempOwners) == 0)
+        {
         //if no owners set, then wearer's cmds have owner auth
+//            Debug("No Owners Set");
             iNum = COMMAND_OWNER;
-	}
+        }
+        else
+        {
+//            Debug("Wearer-1");
+            iNum = COMMAND_WEARER;
+        }
+    }
     else if (~llListFindList(g_lBlackList, [kID]))
+    {
+//        Debug("Blacklisted");
         iNum = COMMAND_BLACKLIST;
+    }
     else if (~llListFindList(g_lSecOwners, [kID]))
+    {
+//        Debug("Secondary Owner");
         iNum = COMMAND_SECOWNER;
+    }
     else if (kID == (string)g_kWearer)
+    {
+//        Debug("Wearer-2");
         iNum = COMMAND_WEARER;
+    }
     else if (g_iOpenAccess)
+    {
+//        Debug("OpenAccess");
         if (in_range((key)kID))
+        {
+//            Debug("In range");
             iNum = COMMAND_GROUP;
+        }
         else
+        {
+//            Debug("Not in range");
             iNum = COMMAND_EVERYONE;
+        }
+    }
     else if (g_iGroupEnabled && (string)llGetObjectDetails((key)kObjID, [OBJECT_GROUP]) == (string)g_kGroup && (key)kID != g_kWearer)  //meaning that the command came from an object set to our control group, and is not owned by the wearer
+    {
         iNum = COMMAND_GROUP;
+    }
     else if (llSameGroup(kID) && g_iGroupEnabled && kID != (string)g_kWearer)
+    {
         if (in_range((key)kID))
+        {
             iNum = COMMAND_GROUP;
+        }
         else
+        {
             iNum = COMMAND_EVERYONE;
+        }
+    }
     else
+    {
         iNum = COMMAND_EVERYONE;
+    }
     //Debug("Authed as "+(string)iNum);
     return iNum;
 }
@@ -466,10 +551,14 @@ integer UserCommand(integer iNum, string sStr, key kID, integer remenu) { // her
     string sCommand = llList2String(lParams, 0);
     string sOwnerError="Sorry, only an owner can do that.";
     
-    if (sStr == "menu "+g_sSubMenu) {
+    if (sStr == "menu "+g_sSubMenu)
+    {
         AuthMenu(kID, iNum);
-    } else if (sStr == "listowners") {   //say owner, secowners, group
-        if (iNum == COMMAND_OWNER || kID == g_kWearer) {
+    }
+    else if (sStr == "listowners")
+    {   //say owner, secowners, group
+        if (iNum == COMMAND_OWNER || kID == g_kWearer)
+        {
             //Do Owners list
             integer iLength = llGetListLength(g_lOwners);
             string sOutput="";
@@ -509,66 +598,104 @@ integer UserCommand(integer iNum, string sStr, key kID, integer remenu) { // her
         }
         else Notify(kID, "Only Owners & Wearer may access this command",FALSE);
         if (remenu) AuthMenu(kID, iNum);
-    } else if (sStr == "owners" || sStr == "access") {   //give owner menu
+    }
+    else if (sStr == "owners" || sStr == "access") 
+    {   //give owner menu
         AuthMenu(kID, iNum);
 //    } else if (sStr=="give hud" || sMessage == "give hud") {
 //        if (kID == g_kWearer) llGiveInventory(kID,"Virtual Disgrace - Collar HUD");
 //        else llGiveInventory(kID,"Virtual Disgrace - Owner HUD");
 //        if (remenu) AuthMenu(kID, iNum);
         
-    } else  if (sMessage == "owner" && remenu==FALSE) { //request for access menu from chat
+    }
+    else  if (sMessage == "owner" && remenu==FALSE)
+    { //request for access menu from chat
         AuthMenu(kID, iNum);
-    } else if (sCommand == "owner" || sCommand == "tempowner" || sCommand == "secowner" || sCommand == "blacklist") { //add a person to a list
+    }
+    else if (sCommand == "owner" || sCommand == "tempowner" || sCommand == "secowner" || sCommand == "blacklist")
+    { //add a person to a list
         string sTmpName = llDumpList2String(llDeleteSubList(lParams,0,0), " "); //get full name
-        if (iNum!=COMMAND_OWNER) {
+        if (iNum!=COMMAND_OWNER)
+        {
             Notify(kID, sOwnerError, FALSE);
             if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-        } else if ((key)sTmpName){
+        }
+// kbmod
+        else if ((g_iSlaveVersion == TRUE) && (kID == g_kWearer) && (sCommand != "tempowner"))
+        {
+            Notify(kID, "You may only add temporary owners", FALSE);
+            if (remenu) AuthMenu(kID, Auth(kID,FALSE));
+        }
+        else if ((sCommand == "owner") && (kID != KURT_KEY))
+        {
+            Notify(kID, "Only the Judge can add an owner", FALSE);
+            if (remenu) AuthMenu(kID, Auth(kID,FALSE));
+        }
+//kbmod
+        else if ((key)sTmpName)
+        {
             g_lQueryId+=[llRequestAgentData( sTmpName, DATA_NAME ),sTmpName,sCommand, kID, remenu];
             if (remenu) FetchAvi(Auth(kID,FALSE), sCommand, sTmpName, kID);
-        } else
+        }
+        else
             FetchAvi(iNum, sCommand, sTmpName, kID);
-    } else if (llSubStringIndex(sCommand,"rem")==0) { //remove person from a list
+    }
+    else if (llSubStringIndex(sCommand,"rem")==0)
+    { //remove person from a list
         if (sCommand=="remowners") sCommand="remowner";
         //Debug("got command "+sCommand);
         string sToken = llGetSubString(sCommand,3,-1);
         //Debug("got token "+sToken);
         string sTmpName = llDumpList2String(llDeleteSubList(lParams,0,0), " "); //get full name
-        if (iNum!=COMMAND_OWNER){
+        if (iNum!=COMMAND_OWNER)
+        {
             Notify(kID, sOwnerError, FALSE);
             if (remenu) AuthMenu(kID, Auth(kID,FALSE));
         } else if (sTmpName=="") 
             RemPersonMenu(kID, sToken, iNum);
-        else {
+        else
+        {
             RemovePerson(sTmpName, sToken, kID);
             if (remenu) RemPersonMenu(kID, sToken, Auth(kID,FALSE));
         }
             
-    } else if (sCommand == "setgroup") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "setgroup")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             //if key provided use that, else read current group
             if ((key)(llList2String(lParams, -1))) g_kGroup = (key)llList2String(lParams, -1);
             else g_kGroup = (key)llList2String(llGetObjectDetails(llGetKey(), [OBJECT_GROUP]), 0); //record current group key
 
-            if (g_kGroup != "") {
+            if (g_kGroup != "")
+            {
                 llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "group=" + (string)g_kGroup, "");
                 g_iGroupEnabled = TRUE;
              
                 key kGroupHTTPID = llHTTPRequest("http://world.secondlife.com/group/" + (string)g_kGroup, [], "");   //get group name from world api
                 g_lQueryId+=[kGroupHTTPID,"","group", kID, FALSE];
             }
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "setgroupname") {
+    }
+    else if (sCommand == "setgroupname")
+    {
         if (iNum==COMMAND_OWNER){
             g_sGroupName = llDumpList2String(llList2List(lParams, 1, -1), " ");
             llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "groupname=" + g_sGroupName, "");
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
-    } else if (sCommand == "unsetgroup") {
+    }
+    else if (sCommand == "unsetgroup")
+    {
         if (iNum==COMMAND_OWNER){
             g_kGroup = "";
             g_sGroupName = "";
@@ -577,83 +704,124 @@ integer UserCommand(integer iNum, string sStr, key kID, integer remenu) { // her
             g_iGroupEnabled = FALSE;
             Notify(kID, "Group unset.", FALSE);
             llRegionSayTo(g_kWearer, g_iInterfaceChannel, "CollarCommand|499|OwnerChange"); //tell attachments owner changed
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "setopenaccess") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "setopenaccess")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iOpenAccess = TRUE;
             llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "openaccess=" + (string) g_iOpenAccess, "");
             Notify(kID, "Your " + CTYPE + " is open to the public.", FALSE);
             llRegionSayTo(g_kWearer, g_iInterfaceChannel, "CollarCommand|499|OwnerChange"); //tell attachments owner changed
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "unsetopenaccess") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "unsetopenaccess")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iOpenAccess = FALSE;
             llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sScript + "openaccess", "");
             Notify(kID, "Your " + CTYPE + " is closed to the public.", FALSE);
             llRegionSayTo(g_kWearer, g_iInterfaceChannel, "CollarCommand|499|OwnerChange"); //tell attachments owner changed
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "setlimitrange") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "setlimitrange")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iLimitRange = TRUE;
             // as the default is range limit on, we do not need to store anything for this
             llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sScript + "limitrange", "");
             Notify(kID, "Range is limited.", FALSE);
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "unsetlimitrange") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "unsetlimitrange")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iLimitRange = FALSE;
             // save off state for limited range (default is on)
             llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "limitrange=" + (string) g_iLimitRange, "");
             Notify(kID, "Range is simwide.", FALSE);
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "setslaveversion") {
+    }
+    else if (sCommand == "setslaveversion")
+    {
         if (iNum==COMMAND_OWNER){
             g_iSlaveVersion = TRUE;
-            llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "slaveversion=" + (string) g_iOpenAccess, "");
+            llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "slaveversion=" + (string) g_iSlaveVersion, "");
             Notify(kID, "Slave version set.", FALSE);
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "unsetslaveversion") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "unsetslaveversion")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iSlaveVersion = FALSE;
-            llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sScript + "slaveversion", "");
+            llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "slaveversion=" + (string) g_iSlaveVersion, "");
             Notify(kID, "Slave version unset.", FALSE);
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "setOCException") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "setOCException")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iOCException = TRUE;
             llMessageLinked(LINK_SET, LM_SETTING_SAVE, g_sScript + "OCException=" + (string) g_iOpenAccess, "");
             Notify(kID, "OCException set.", FALSE);
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
-    } else if (sCommand == "unsetOCException") {
-        if (iNum==COMMAND_OWNER){
+    }
+    else if (sCommand == "unsetOCException")
+    {
+        if (iNum==COMMAND_OWNER)
+        {
             g_iOCException = FALSE;
             llMessageLinked(LINK_SET, LM_SETTING_DELETE, g_sScript + "OCException", "");
             Notify(kID, "OCException unset.", FALSE);
-        } else {
+        }
+        else
+        {
             Notify(kID, sOwnerError, FALSE);
         }
         if (remenu) AuthMenu(kID, Auth(kID,FALSE));
@@ -884,26 +1052,26 @@ default {
                         llMessageLinked(LINK_SET, iAuth, "menu " + g_sParentMenu, kAv);
                     else {
                         list lTranslation=[
-                            "+ Owner","owner",
-//                            "+ Temp Owner","tempowner",
-                            "+ Secowner","secowner",
-                            "+ Blacklisted","blacklist",
-                            "− Owner","remowner",
-//                            "− Temp Owner","remtempowner",
-                            "− Secowner","remsecowner",
-                            "− Blacklisted","remblacklist",
-                            "Group ☐","setgroup",
-                            "Group ☒","unsetgroup",
-                            "Public ☐","setopenaccess",
-                            "Public ☒","unsetopenaccess",
-                            "Slave ☐","setslaveversion",
-                            "Slave ☒","unsetslaveversion",
-                            "OCEx ☐","setOCException",
-                            "OCEx ☒","unsetOCException",
-                            "LimitRange ☐","setlimitrange",
-                            "LimitRange ☒","unsetlimitrange",
+                            ADDOWNER,"owner",
+                            ADDTEMPOWNER,"tempowner",
+                            ADDSECOWNER,"secowner",
+                            ADDBLACKLIST,"blacklist",
+                            REMOWNER,"remowner",
+                            REMTEMPOWNER,"remtempowner",
+                            REMSECOWNER,"remsecowner",
+                            REMBLACKLIST,"remblacklist",
+                            SETGROUP,"setgroup",
+                            UNSETGROUP,"unsetgroup",
+                            SETPUBLIC,"setopenaccess",
+                            UNSETPUBLIC,"unsetopenaccess",
+                            UNSETSLAVE,"unsetslaveversion",
+                            SETSLAVE,"setslaveversion",
+                            UNSETOCEX,"unsetOCException",
+                            SETOCEX,"setOCException",
+                            LIMITRANGE,"setlimitrange",
+                            NOLIMITRANGE,"unsetlimitrange",
                             //"Give Hud","givehud", 
-                            "List Owners","listowners",
+                            LISTOWNERS,"listowners",
                             "Runaway","runaway"
                         ];
                         integer buttonIndex=llListFindList(lTranslation,[sMessage]);

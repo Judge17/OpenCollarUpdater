@@ -3,10 +3,10 @@
 //                              OpenCollar - dialog                               //
 //                                 version 3.989                                  //
 // ------------------------------------------------------------------------------ //
-// Licensed under the GPLv2 with additional requirements specific to Second Life® //
+// Licensed under the GPLv2 with additional requirements specific to Second Life¬Æ //
 // and other virtual metaverse environments.  ->  www.opencollar.at/license.html  //
 // ------------------------------------------------------------------------------ //
-// ©   2008 - 2014  Individual Contributors and OpenCollar - submission set free™ //
+// ¬©   2008 - 2014  Individual Contributors and OpenCollar - submission set free‚Ñ¢ //
 // ------------------------------------------------------------------------------ //
 //                    github.com/OpenCollar/OpenCollarUpdater                     //
 // ------------------------------------------------------------------------------ //
@@ -86,19 +86,40 @@ list g_lSensorDetails;
 integer g_bSensorLock;
 integer g_iSensorTimeout;
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
+integer GetStringBytes(string sStr)
+{
+    sStr = llEscapeURL(sStr);
+    integer l = llStringLength(sStr);
+    list lAtoms = llParseStringKeepNulls(sStr, ["%"], []);
+    return l - 2 * llGetListLength(lAtoms) + 2;
 }
-*/
+
+string TruncateString(string sStr, integer iBytes)
+{
+    sStr = llEscapeURL(sStr);
+    integer j = 0;
+    string sOut;
+    integer l = llStringLength(sStr);
+    for (; j < l; j++)
+    {
+        string c = llGetSubString(sStr, j, j);
+        if (c == "%")
+        {
+            if (iBytes >= 2)
+            {
+                sOut += llGetSubString(sStr, j, j+2);
+                j += 2;
+                iBytes -= 2;
+            }
+        }
+        else if (iBytes >= 1)
+        {
+            sOut += c;
+            iBytes --;
+        }
+    }
+    return llUnescapeURL(sOut);
+}
 
 Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
 {
@@ -245,41 +266,6 @@ Dialog(key kRecipient, string sPrompt, list lMenuItems, list lUtilityButtons, in
     //Debug("Made Dialog");
 }
 
-integer GetStringBytes(string sStr)
-{
-    sStr = llEscapeURL(sStr);
-    integer l = llStringLength(sStr);
-    list lAtoms = llParseStringKeepNulls(sStr, ["%"], []);
-    return l - 2 * llGetListLength(lAtoms) + 2;
-}
-
-string TruncateString(string sStr, integer iBytes)
-{
-    sStr = llEscapeURL(sStr);
-    integer j = 0;
-    string sOut;
-    integer l = llStringLength(sStr);
-    for (; j < l; j++)
-    {
-        string c = llGetSubString(sStr, j, j);
-        if (c == "%")
-        {
-            if (iBytes >= 2)
-            {
-                sOut += llGetSubString(sStr, j, j+2);
-                j += 2;
-                iBytes -= 2;
-            }
-        }
-        else if (iBytes >= 1)
-        {
-            sOut += c;
-            iBytes --;
-        }
-    }
-    return llUnescapeURL(sOut);
-}
-
 list PrettyButtons(list lOptions, list lUtilityButtons, list iPagebuttons){  //returns a list formatted to that "options" will start in the top left of a dialog, and "utilitybuttons" will start in the bottom right
     list lSpacers;
     list lCombined = lOptions + lUtilityButtons + iPagebuttons;
@@ -383,6 +369,20 @@ ClearUser(key kRCPT)
     //Debug(llDumpList2String(g_lMenus, ","));
 }
 
+/*
+integer g_iProfiled;
+Debug(string sStr) {
+    //if you delete the first // from the preceeding and following  lines,
+    //  profiling is off, debug is off, and the compiler will remind you to 
+    //  remove the debug calls from the code, we're back to production mode
+    if (!g_iProfiled){
+        g_iProfiled=1;
+        llScriptProfiler(1);
+    }
+    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+") :\n" + sStr);
+}
+*/
+
 integer UserCommand(integer iNum, string sStr, key kID)
 {
     if (iNum < COMMAND_OWNER || iNum > COMMAND_WEARER) return FALSE;
@@ -431,17 +431,30 @@ dequeueSensor(){
     llSetTimerEvent(g_iReapeat);
 
 }
-
-default {
-    on_rez(integer iParam) {
-        llResetScript();
-    }
-
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
-        g_sScript = "dialog_";
+default
+{
+    state_entry()
+    {
+        g_sScript = llStringTrim(llList2String(llParseString2List(llGetScriptName(), ["-"], []), 1), STRING_TRIM) + "_";
         g_kWearer=llGetOwner();
         //Debug("Starting");
+    }
+
+    changed(integer iChange){
+        if (iChange & CHANGED_OWNER) llResetScript();
+/*        
+        if (iChange & CHANGED_REGION) {
+            if (g_iProfiled){
+                llScriptProfiler(1);
+                Debug("profiling restarted");
+            }
+        }
+*/        
+    }
+    
+    on_rez(integer iParam)
+    {
+        llResetScript();
     }
 
     sensor(integer num_detected){
@@ -702,17 +715,5 @@ default {
             //Debug("no active dialogs, stopping timer");
             llSetTimerEvent(0.0);
         }
-    }
-    
-    changed(integer iChange){
-        if (iChange & CHANGED_OWNER) llResetScript();
-/*        
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled){
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
-*/        
     }
 }

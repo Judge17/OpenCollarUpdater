@@ -3,10 +3,10 @@
 //                              OpenCollar - color                                //
 //                                 version 3.988                                  //
 // ------------------------------------------------------------------------------ //
-// Licensed under the GPLv2 with additional requirements specific to Second Life® //
+// Licensed under the GPLv2 with additional requirements specific to Second Life¬Æ //
 // and other virtual metaverse environments.  ->  www.opencollar.at/license.html  //
 // ------------------------------------------------------------------------------ //
-// ©   2008 - 2014  Individual Contributors and OpenCollar - submission set free™ //
+// ¬©   2008 - 2014  Individual Contributors and OpenCollar - submission set free‚Ñ¢ //
 // ------------------------------------------------------------------------------ //
 //                    github.com/OpenCollar/OpenCollarUpdater                     //
 // ------------------------------------------------------------------------------ //
@@ -110,26 +110,21 @@ string CTYPE = "collar";
 key g_kWearer;
 string g_sScript;
 
-/*
-integer g_iProfiled;
-Debug(string sStr) {
-    //if you delete the first // from the preceeding and following  lines,
-    //  profiling is off, debug is off, and the compiler will remind you to 
-    //  remove the debug calls from the code, we're back to production mode
-    if (!g_iProfiled){
-        g_iProfiled=1;
-        llScriptProfiler(1);
-    }
-    llOwnerSay(llGetScriptName() + "(min free:"+(string)(llGetMemoryLimit()-llGetSPMaxMemory())+")["+(string)llGetFreeMemory()+"] :\n" + sStr);
-}
-*/
-
 key Dialog(key kRCPT, string sPrompt, list lChoices, list lUtilityButtons, integer iPage, integer iAuth)
 {
     key kID = llGenerateKey();
     llMessageLinked(LINK_SET, DIALOG, (string)kRCPT + "|" + sPrompt + "|" + (string)iPage + "|" 
     + llDumpList2String(lChoices, "`") + "|" + llDumpList2String(lUtilityButtons, "`") + "|" + (string)iAuth, kID);
-    //Debug("Made menu.");
+    return kID;
+} 
+
+key TouchRequest(key kRCPT,  integer iTouchStart, integer iTouchEnd, integer iAuth)
+{
+    key kID = llGenerateKey();
+    integer iFlags = 0;
+    if (iTouchStart) iFlags = iFlags | 0x01;
+    if (iTouchEnd) iFlags = iFlags | 0x02;
+    llMessageLinked(LINK_SET, TOUCH_REQUEST, (string)kRCPT + "|" + (string)iFlags + "|" + (string)iAuth, kID);
     return kID;
 } 
 
@@ -143,16 +138,6 @@ Notify(key kID, string sMsg, integer iAlsoNotifyWearer)
         if (iAlsoNotifyWearer) llOwnerSay(sMsg);
     }
 }
-
-key TouchRequest(key kRCPT,  integer iTouchStart, integer iTouchEnd, integer iAuth)
-{
-    key kID = llGenerateKey();
-    integer iFlags = 0;
-    if (iTouchStart) iFlags = iFlags | 0x01;
-    if (iTouchEnd) iFlags = iFlags | 0x02;
-    llMessageLinked(LINK_SET, TOUCH_REQUEST, (string)kRCPT + "|" + (string)iFlags + "|" + (string)iAuth, kID);
-    return kID;
-} 
 
 CategoryMenu(key kAv, integer iAuth)
 {
@@ -264,18 +249,18 @@ string Vec2String(vector vVec)
     return "<" + llDumpList2String(lParts, ",") + ">";
 }
 
-default {
-    on_rez(integer iParam) {
-        llResetScript();
-    }
-
-    state_entry() {
-        //llSetMemoryLimit(65536);  //this script needs to be profiled, and its memory limited
-        g_sScript = "color_";
+default
+{
+    state_entry()
+    {
+        g_sScript = llStringTrim(llList2String(llParseString2List(llGetScriptName(), ["-"], []), 1), STRING_TRIM) + "_";
         g_kWearer = llGetOwner();
-      
-        BuildElementList();  //loop through non-root prims, build element list
-        //Debug("Starting");
+        //loop through non-root prims, build element list
+        BuildElementList();
+        // no more needed
+        // we need to unify the initialization of the menu system for 3.5
+        //llSleep(1.0);
+        //llMessageLinked(LINK_SET, MENUNAME_RESPONSE, g_sParentMenu + "|" + g_sSubMenu, "");
     }
 
     link_message(integer iSender, integer iNum, string sStr, key kID)
@@ -478,15 +463,8 @@ default {
         }
     }
 
-/*
-    changed(integer iChange) {
-        if (iChange & CHANGED_REGION) {
-            if (g_iProfiled) {
-                llScriptProfiler(1);
-                Debug("profiling restarted");
-            }
-        }
+    on_rez(integer iParam)
+    {
+        llResetScript();
     }
-*/
-    
 }
